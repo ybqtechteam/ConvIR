@@ -3,7 +3,7 @@ import torch
 import argparse
 from torch.backends import cudnn
 from models.ConvIR import build_net
-from train import _train
+from train import _train, _train_CL
 from eval import _eval
 
 
@@ -24,7 +24,13 @@ def main(args):
     if torch.cuda.is_available():
         model.cuda()
     if args.mode == 'train':
-        _train(model, args)
+        print('Training mode: ', args.phase)
+        
+        if args.phase == 'easy':
+            print('Training on easy phase')
+            _train(model, args)
+        else:
+            _train_CL(model, args)
 
     elif args.mode == 'test':
         _eval(model, args)
@@ -40,15 +46,17 @@ if __name__ == '__main__':
     parser.add_argument('--type', default='small', choices=['small', 'base', 'large'], type=str)
 
     # Train
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--learning_rate', type=float, default=1e-4)
     parser.add_argument('--weight_decay', type=float, default=0)
-    parser.add_argument('--num_epoch', type=int, default=30)
+    parser.add_argument('--num_epoch', type=int, default=300)
     parser.add_argument('--print_freq', type=int, default=100)
-    parser.add_argument('--num_worker', type=int, default=8)
+    parser.add_argument('--num_worker', type=int, default=4)
     parser.add_argument('--save_freq', type=int, default=1)
     parser.add_argument('--valid_freq', type=int, default=1)
     parser.add_argument('--resume', type=str, default='')
+    parser.add_argument('--phase', type=str, default='easy')
+    parser.add_argument('--patience', type=int, default=30)
 
 
     # Test

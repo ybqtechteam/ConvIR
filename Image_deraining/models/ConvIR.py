@@ -139,5 +139,6 @@ class ConvIR(nn.Module):
         return outputs
 
 
-def build_net():
-    return ConvIR()
+def build_net(num_res):
+    print("Number of residual blocks: ", num_res)
+    return ConvIR(num_res=num_res)  # You can change num_res to adjust the number of residual blocks

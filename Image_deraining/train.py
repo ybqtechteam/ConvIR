@@ -6,6 +6,7 @@ from torch.utils.tensorboard import SummaryWriter
 from valid import _valid
 import torch.nn.functional as F
 import torch.nn as nn
+from early import EarlyStopping
 
 from warmup_scheduler import GradualWarmupScheduler
 
@@ -23,12 +24,18 @@ def _train(model, args):
     scheduler.step()
     epoch = 1
     if args.resume:
-        state = torch.load(args.resume)
-        epoch = state['epoch']
-        optimizer.load_state_dict(state['optimizer'])
+        print('Resume from %s' % args.resume)
+        state = torch.load(args.resume, weights_only=True)
+        # epoch = state['epoch']
+        # optimizer.load_state_dict(state['optimizer'])
         model.load_state_dict(state['model'])
-        print('Resume from %d'%epoch)
-        epoch += 1
+        # print('Resume from %d'%epoch)
+        # epoch += 1
+    else:
+        print("Training from scratch")
+
+    # print("]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]")
+    # print(model)
 
 
 
@@ -40,6 +47,8 @@ def _train(model, args):
     epoch_timer = Timer('m')
     iter_timer = Timer('m')
     best_psnr=-1
+
+    early_stopping = EarlyStopping(patience=30)
 
     for epoch_idx in range(epoch, args.num_epoch + 1):
 
@@ -104,24 +113,40 @@ def _train(model, args):
                 iter_timer.tic()
                 iter_pixel_adder.reset()
                 iter_fft_adder.reset()
-        overwrite_name = os.path.join(args.model_save_dir, 'model.pkl')
-        torch.save({'model': model.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'epoch': epoch_idx}, overwrite_name)
+        # overwrite_name = os.path.join(args.model_save_dir, 'model.pkl')
+        # # torch.save({'model': model.state_dict(),
+        #             'optimizer': optimizer.state_dict(),
+        #             'epoch': epoch_idx}, overwrite_name)
 
-        if epoch_idx % args.save_freq == 0:
-            save_name = os.path.join(args.model_save_dir, 'model_%d.pkl' % epoch_idx)
-            torch.save({'model': model.state_dict()}, save_name)
+        # if epoch_idx % args.save_freq == 0:
+        #     save_name = os.path.join(args.model_save_dir, 'model_%d.pkl' % epoch_idx)
+        #     torch.save({'model': model.state_dict()}, save_name)
+
         print("EPOCH: %02d\nElapsed time: %4.2f Epoch Pixel Loss: %7.4f Epoch FFT Loss: %7.4f" % (
             epoch_idx, epoch_timer.toc(), epoch_pixel_adder.average(), epoch_fft_adder.average()))
+        
         epoch_fft_adder.reset()
         epoch_pixel_adder.reset()
         scheduler.step()
+        
         if epoch_idx % args.valid_freq == 0:
-            val_rain = _valid(model, args, epoch_idx)
-            print('%03d epoch \n Average DeRain PSNR %.2f dB' % (epoch_idx, val_rain))
+            val_rain  = _valid(model, args, epoch_idx)
+            print('%03d epoch \n CURRENT Average DeRain PSNR %.2f dB' % (epoch_idx, val_rain))
             writer.add_scalar('PSNR_DeRain', val_rain, epoch_idx)
             if val_rain >= best_psnr:
+                print('Saving best model at epoch %d with PSNR %.2f' % (epoch_idx, val_rain))
                 torch.save({'model': model.state_dict()}, os.path.join(args.model_save_dir, 'Best.pkl'))
+                best_psnr = val_rain
+
+
+
+        early_stopping(val_rain) 
+
+
+        if early_stopping.early_stop:
+            print("Early stopping triggered")
+            break
+    
+    
     save_name = os.path.join(args.model_save_dir, 'Final.pkl')
     torch.save({'model': model.state_dict()}, save_name)

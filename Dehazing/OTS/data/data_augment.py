@@ -32,7 +32,7 @@ class PairCompose(transforms.Compose):
         return image, label
 
 
-class PairRandomHorizontalFilp(transforms.RandomHorizontalFlip):
+class PairRandomHorizontalFlip(transforms.RandomHorizontalFlip):
     def __call__(self, img, label):
         """
         Args:
@@ -43,6 +43,19 @@ class PairRandomHorizontalFilp(transforms.RandomHorizontalFlip):
         """
         if random.random() < self.p:
             return F.hflip(img), F.hflip(label)
+        return img, label
+
+class PairRandomVerticalFlip(transforms.RandomVerticalFlip):
+    def __call__(self, img, label):
+        """
+        Args:
+            img (PIL Image): Image to be flipped.
+
+        Returns:
+            PIL Image: Randomly flipped image.
+        """
+        if random.random() < self.p:
+            return F.vflip(img), F.vflip(label)
         return img, label
 
 
@@ -56,3 +69,45 @@ class PairToTensor(transforms.ToTensor):
             Tensor: Converted image.
         """
         return F.to_tensor(pic), F.to_tensor(label)
+
+
+class PairResize(transforms.Resize):
+    def __call__(self, image, label):
+        """
+        Args:
+            image (PIL Image): Image to be resized.
+            label (PIL Image): Label to be resized.
+
+        Returns:
+            tuple: Resized image and label.
+        """
+        h, w = self.size
+
+        # width, height = image.size
+
+        size = (w, h)
+
+        # if width > height:
+        #     size = (w, h)
+        # else:
+        #     size = (h, w)
+
+        return F.resize(image, size), F.resize(label, size)
+
+
+
+class PairCenterCrop(transforms.CenterCrop):
+    def __call__(self, image, label):
+
+        image = F.center_crop(image, (self.size[0], self.size[0]))
+        label = F.center_crop(label, (self.size[0], self.size[0]))
+
+        return image, label
+
+
+class PairRandomRotation(transforms.RandomRotation):
+    def __call__(self, image, label):
+        if random.random() < 0.5:
+            angle = self.get_params(self.degrees)
+            return F.rotate(image, angle), F.rotate(label, angle)
+        return image, label
