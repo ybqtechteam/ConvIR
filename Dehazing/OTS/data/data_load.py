@@ -152,7 +152,7 @@ class DeblurDataset(Dataset):
 
 import pathlib
 import random
-class ConcatDataset(Dataset):
+class CurriculumLearningDataset(Dataset):
 
     def __init__(self, easy_dataset, medium_dataset, hard_dataset, extreme_dataset, transform=None, is_test=False):
 
@@ -319,7 +319,7 @@ def train_dataloader_CL(_, phase, batch_size=64, num_workers=0, use_transform=Tr
         )
 
 
-    dataset = ConcatDataset(easy_dataset, medium_dataset, hard_dataset, extreme_dataset, transform=transform) 
+    dataset = CurriculumLearningDataset(easy_dataset, medium_dataset, hard_dataset, extreme_dataset, transform=transform) 
     sampler = CurriculumSampler(dataset.get_difficulty_indicies(), phase=phase, dataset_length=dataset.length(phase), shuffle=True)
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, pin_memory=True, sampler=sampler, drop_last=True) # ultimo batch se non completo da errore
     return dataloader
@@ -349,7 +349,7 @@ def valid_dataloader_CL(_, phase, batch_size=64, num_workers=0, use_transform=Tr
         )
 
 
-    dataset = ConcatDataset(easy_dataset, medium_dataset, hard_dataset, extreme_dataset, transform=transform) 
+    dataset = CurriculumLearningDataset(easy_dataset, medium_dataset, hard_dataset, extreme_dataset, transform=transform) 
     sampler = CurriculumSampler(dataset.get_difficulty_indicies(), phase=phase, dataset_length=dataset.length(phase), shuffle=False)
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, pin_memory=True, sampler=sampler)
     return dataloader

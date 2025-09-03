@@ -5,6 +5,7 @@ from torch.backends import cudnn
 from models.ConvIR import build_net
 from train import _train, _train_CL
 from eval import _eval
+from subset_eval import _subset_eval
 
 
 def main(args):
@@ -34,6 +35,9 @@ def main(args):
 
     elif args.mode == 'test':
         _eval(model, args)
+    
+    elif args.mode == 'subset_test':
+        _subset_eval(model, args)
 
 
 if __name__ == '__main__':
@@ -42,7 +46,7 @@ if __name__ == '__main__':
     # Directories
     parser.add_argument('--model_name', default='ConvIR', type=str)
     parser.add_argument('--data_dir', type=str, default='')
-    parser.add_argument('--mode', default='test', choices=['train', 'test'], type=str)
+    parser.add_argument('--mode', default='test', choices=['train', 'test', 'subset_test'], type=str)
     parser.add_argument('--type', default='small', choices=['small', 'base', 'large'], type=str)
 
     # Train
@@ -62,6 +66,8 @@ if __name__ == '__main__':
     # Test
     parser.add_argument('--test_model', type=str, default='')
     parser.add_argument('--save_image', type=bool, default=False, choices=[True, False])
+    parser.add_argument("--number_subsets", type=int, default=10)
+    parser.add_argument("--subset_ratio", type=float, default=0.5)
 
     args = parser.parse_args()
     args.model_save_dir = os.path.join('results/', 'ConvIR', 'OTS/')
