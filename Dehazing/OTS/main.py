@@ -60,7 +60,7 @@ if __name__ == '__main__':
     parser.add_argument('--valid_freq', type=int, default=1)
     parser.add_argument('--resume', type=str, default='')
     parser.add_argument('--phase', type=str, default='easy')
-    parser.add_argument('--patience', type=int, default=30)
+    parser.add_argument('--patience', type=int, default=50)
 
 
     # Test
@@ -81,6 +81,8 @@ if __name__ == '__main__':
     command = 'cp ' + 'train.py ' + args.model_save_dir
     os.system(command)
     command = 'cp ' + 'main.py ' + args.model_save_dir
+    os.system(command)
+    command = 'cp -r ' + 'data ' + args.model_save_dir
     os.system(command)
     print(args)
     main(args)

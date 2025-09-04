@@ -60,10 +60,11 @@ class ConcatDataset(Dataset):
 
 class RandomSampler(Sampler):
 
-    def __init__(self, total_samples: int, subset_ratio: float, shuffle: bool):
+    def __init__(self, total_samples: int, subset_ratio: float, shuffle: bool, seed: int = 42):
         self.total_samples = total_samples
         self.subset_samples = int(total_samples * subset_ratio)
         self.shuffle = shuffle
+        random.seed(seed)
 
     def __iter__(self):
         indices = random.sample(list(range(self.total_samples)), self.subset_samples)

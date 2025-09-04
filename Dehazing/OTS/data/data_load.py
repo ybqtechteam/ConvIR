@@ -18,9 +18,9 @@ def train_dataloader(path, batch_size=64, num_workers=0, use_transform=True):
         transform = PairCompose(
             [   
                 PairResize((640, 480)),
-                # PairRandomHorizontalFlip(),
-                # PairRandomVerticalFlip(),
-                # PairRandomRotation(degrees=30),
+                PairRandomHorizontalFlip(),
+                PairRandomVerticalFlip(),
+                PairRandomRotation(degrees=30),
                 PairToTensor()
             ]
         )
