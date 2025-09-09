@@ -12,7 +12,7 @@ def _subset_eval(model, args):
     state_dict = torch.load(args.test_model, weights_only=True)
     model.load_state_dict(state_dict['model'])
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    dataloader = test_subset_dataloader(args.subset_ratio, batch_size=1, num_workers=0)
+    dataloader = test_subset_dataloader(args.test_subset_dir, args.subset_ratio, batch_size=1, num_workers=0)
     torch.cuda.empty_cache()
     analyzer = SubsetAnalyzer(["psnr", "ssim", 'time'], folder_path=args.result_dir)
 

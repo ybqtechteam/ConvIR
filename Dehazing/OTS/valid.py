@@ -13,7 +13,7 @@ def _valid(model, args, ep):
     if args.mode == 'train':
         ots = valid_dataloader(args.data_dir, batch_size=1, num_workers=0)
     elif args.mode == 'concat_train':
-        ots = _valid_concat_dataloader(batch_size=1, num_workers=0)
+        ots = _valid_concat_dataloader(args.data_concat_train_dir, batch_size=1, num_workers=0)
     
     model.eval()
     psnr_adder = Adder()

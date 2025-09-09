@@ -80,36 +80,20 @@ class RandomSampler(Sampler):
 
 
 
-def test_subset_dataloader(subset_ratio, batch_size=1, num_workers=0):
+def test_subset_dataloader(folders_path, subset_ratio, batch_size=1, num_workers=0):
     print('Subset Test dataloader')
     
 
     datasets = {
-            1 : {
-                'dir' : Path(f'dataset/benchmark_splitted/Dense_Haze/test/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/Dense_Haze/test/hazy')), key=lambda x: int(x.split('.')[0])),
-            },
-            
-            2: {
-                'dir' : Path(f'dataset/benchmark_splitted/I-HAZE/test/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/I-HAZE/test/hazy')), key=lambda x: int(x.split('.')[0])),
-            },
-
-            3: {
-                'dir' : Path(f'dataset/benchmark_splitted/O-HAZE/test/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/O-HAZE/test/hazy')), key=lambda x: int(x.split('.')[0])),
-            },
-
-            4: {
-                'dir' : Path(f'dataset/benchmark_splitted/NH-HAZE/test/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/NH-HAZE/test/hazy')), key=lambda x: int(x.split('.')[0])),
-            }, 
-
-            5: {
-                'dir' : Path(f'dataset/custom_dataset_splitted/test/'),
-                'images': sorted(os.listdir(Path(f'dataset/custom_dataset_splitted/test/hazy')), key=lambda x: int(x.split('.')[0])),
-            }
+        k: {
+            'dir': Path(v) / "test",
+            'images': sorted(
+                os.listdir(Path(v) / 'test' / "hazy"),
+                key=lambda x: int(x.split('.')[0])
+            )
         }
+        for k, v in enumerate(folders_path, start=1)
+    }
     
 
 
@@ -128,30 +112,19 @@ def test_subset_dataloader(subset_ratio, batch_size=1, num_workers=0):
 
 
 
-def _train_concat_dataloader(batch_size, num_workers):
+def _train_concat_dataloader(folders_path, batch_size, num_workers):
     print('Concat train dataloader')
 
     datasets = {
-            1 : {
-                'dir' : Path(f'dataset/benchmark_splitted/Dense_Haze/train/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/Dense_Haze/train/hazy')), key=lambda x: int(x.split('.')[0])),
-            },
-            
-            2: {
-                'dir' : Path(f'dataset/benchmark_splitted/I-HAZE/train/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/I-HAZE/train/hazy')), key=lambda x: int(x.split('.')[0])),
-            },
-
-            3: {
-                'dir' : Path(f'dataset/benchmark_splitted/O-HAZE/train/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/O-HAZE/train/hazy')), key=lambda x: int(x.split('.')[0])),
-            },
-
-            4: {
-                'dir' : Path(f'dataset/benchmark_splitted/NH-HAZE/train/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/NH-HAZE/train/hazy')), key=lambda x: int(x.split('.')[0])),
-            }
+        k: {
+            'dir': Path(v) / "train",
+            'images': sorted(
+                os.listdir(Path(v) / 'train' / "hazy"),
+                key=lambda x: int(x.split('.')[0])
+            )
         }
+        for k, v in enumerate(folders_path, start=1)
+    }
     
 
     transform = PairCompose(
@@ -170,30 +143,19 @@ def _train_concat_dataloader(batch_size, num_workers):
 
 
 
-def _valid_concat_dataloader(batch_size, num_workers):
+def _valid_concat_dataloader(folders_path, batch_size, num_workers):
     print('Concat train dataloader')
 
     datasets = {
-            1 : {
-                'dir' : Path(f'dataset/benchmark_splitted/Dense_Haze/val/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/Dense_Haze/val/hazy')), key=lambda x: int(x.split('.')[0])),
-            },
-            
-            2: {
-                'dir' : Path(f'dataset/benchmark_splitted/I-HAZE/val/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/I-HAZE/val/hazy')), key=lambda x: int(x.split('.')[0])),
-            },
-
-            3: {
-                'dir' : Path(f'dataset/benchmark_splitted/O-HAZE/val/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/O-HAZE/val/hazy')), key=lambda x: int(x.split('.')[0])),
-            },
-
-            4: {
-                'dir' : Path(f'dataset/benchmark_splitted/NH-HAZE/val/'),
-                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/NH-HAZE/val/hazy')), key=lambda x: int(x.split('.')[0])),
-            }
+        k: {
+            'dir': Path(v) / "val",
+            'images': sorted(
+                os.listdir(Path(v) / 'val' / "hazy"),
+                key=lambda x: int(x.split('.')[0])
+            )
         }
+        for k, v in enumerate(folders_path, start=1)
+    }
     
 
     transform = PairCompose(

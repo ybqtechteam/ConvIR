@@ -21,7 +21,7 @@ def _train(model, args):
     if args.mode == 'train':
         dataloader = train_dataloader(args.data_dir, args.batch_size, args.num_worker)
     elif args.mode == 'concat_train':
-        dataloader = _train_concat_dataloader(args.batch_size, args.num_worker)
+        dataloader = _train_concat_dataloader(args.data_concat_train_dir, args.batch_size, args.num_worker)
     
     max_iter = len(dataloader)
     warmup_epochs=1
