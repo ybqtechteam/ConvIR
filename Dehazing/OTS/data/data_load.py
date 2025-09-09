@@ -297,13 +297,13 @@ class CurriculumSampler(Sampler):
 
 
     
-def train_dataloader_CL(_, phase, batch_size=64, num_workers=0, use_transform=True):
+def train_dataloader_CL(folders, phase, batch_size=64, num_workers=0, use_transform=True):
     print('Train dataloader')
 
-    easy_dataset = pathlib.Path('dataset/haze_splitted/I-HAZE') / 'train'
-    medium_dataset = pathlib.Path('dataset/haze_splitted/O-HAZY') / 'train'
-    hard_dataset = pathlib.Path('dataset/haze_splitted/NH-HAZE') / 'train'
-    extreme_dataset = pathlib.Path('dataset/haze_splitted/Dense_Haze') / 'train'
+    easy_dataset = pathlib.Path(folders['easy']) / 'train'
+    medium_dataset = pathlib.Path(folders['medium']) / 'train'
+    hard_dataset = pathlib.Path(folders['hard']) / 'train'
+    extreme_dataset = pathlib.Path(folders['extreme']) / 'train'
 
 
     transform = None
@@ -330,13 +330,13 @@ def train_dataloader_CL(_, phase, batch_size=64, num_workers=0, use_transform=Tr
 
 
 
-def valid_dataloader_CL(_, phase, batch_size=64, num_workers=0, use_transform=True):
+def valid_dataloader_CL(folders, phase, batch_size=64, num_workers=0, use_transform=True):
     print('Valid dataloader')
 
-    easy_dataset = pathlib.Path('dataset/haze_splitted/I-HAZE') / 'val'
-    medium_dataset = pathlib.Path('dataset/haze_splitted/O-HAZY') / 'val'
-    hard_dataset = pathlib.Path('dataset/haze_splitted/NH-HAZE') / 'val'
-    extreme_dataset = pathlib.Path('dataset/haze_splitted/Dense_Haze') / 'val'
+    easy_dataset = pathlib.Path(folders['easy']) / 'val'
+    medium_dataset = pathlib.Path(folders['medium']) / 'val'
+    hard_dataset = pathlib.Path(folders['hard']) / 'val'
+    extreme_dataset = pathlib.Path(folders['extreme']) / 'val'
 
 
     transform = None

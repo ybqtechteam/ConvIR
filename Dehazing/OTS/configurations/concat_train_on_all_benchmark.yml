@@ -41,5 +41,5 @@ number_subsets: 10  # number of subsets for random sampling of the test set
 subset_ratio: 0.6  # ratio of images to sample for each subset
 
 #* logging
-model_save_dir: oncat_train_on_all_benchmark/ConvIR/OTS/  # directory to save models
-result_dir: oncat_train_on_all_benchmark/test  # directory to save test results
+model_save_dir: results/concat_train_on_all_benchmark/ConvIR/OTS/  # directory to save models
+result_dir: results/concat_train_on_all_benchmark/test  # directory to save test results

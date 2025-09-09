@@ -78,7 +78,7 @@ def _valid(model, args, ep):
 
 def _valid_CL(model, args, ep):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    ots = valid_dataloader_CL(args.data_dir, batch_size=1, num_workers=0, phase=args.phase)
+    ots = valid_dataloader_CL(args.data_curriculum_learning_dir, batch_size=1, num_workers=0, phase=args.phase)
     model.eval()
     psnr_adder = Adder()
 

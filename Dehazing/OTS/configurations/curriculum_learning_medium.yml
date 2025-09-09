@@ -1,0 +1,40 @@
+#* Directories
+model_name: CL_medium # experiment name
+mode: train      # options: 'train', 'test', 'subset_test', 'concat_train'
+type: small       # options: 'small', 'base', 'large'
+
+data_dir: dataset/haze_splitted/O-HAZY  # folder used only for test 
+
+data_curriculum_learning_dir: # list of folders for Curriculum Learning
+  easy: dataset/haze_splitted/I-HAZE
+  medium: dataset/haze_splitted/O-HAZY
+  hard: dataset/haze_splitted/NH-HAZE
+  extreme: dataset/haze_splitted/Dense_Haze
+
+data_concat_train_dir: null # list of folders for training on multiple datasets
+
+test_subset_dir: null  # list of folders for testing on multiple datasets and tested with random sampling
+
+
+#* train
+batch_size: 4
+learning_rate: 0.00005
+weight_decay: 0
+num_epoch: 300
+print_freq: 100
+num_worker: 4
+save_freq: 1
+valid_freq: 1
+resume: train_easy/ConvIR/OTS/Best.pkl  # path to model to resume training
+phase: medium  # options for Curriculum Learning: 'easy', 'medium', 'hard', 'extreme'. Use easy for normal training without Curriculum Learning
+patience: 60  # for early stopping
+
+#* test
+test_model: results/ConvIR/OTS/Best.pkl  # path to model to be tested
+save_image: true  # options: true, false
+number_subsets: null  # number of subsets for random sampling of the test set
+subset_ratio: null  # ratio of images to sample for each subset
+
+#* logging
+model_save_dir: results/ConvIR/OTS/  # directory to save models
+result_dir: results/CL_medium/test  # directory to save test results

@@ -206,7 +206,7 @@ def _train_CL(model, args):
     criterion = torch.nn.L1Loss()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.9, 0.999), eps=1e-8)
-    dataloader = train_dataloader_CL(args.data_dir, args.phase, args.batch_size, args.num_worker)
+    dataloader = train_dataloader_CL(args.data_curriculum_learning_dir, args.phase, args.batch_size, args.num_worker)
     max_iter = len(dataloader)
 
     warmup_epochs=1
