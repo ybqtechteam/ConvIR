@@ -4,7 +4,8 @@ import numpy as np
 from PIL import Image as Image
 from data import *
 from torchvision.transforms import functional as F
-from torch.utils.data import Dataset, DataLoader, Sampler
+from torch.utils.data import DataLoader, Sampler
+from torch.utils.data import Dataset as TorchDataset
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -26,7 +27,7 @@ def train_dataloader(path, batch_size=64, num_workers=0, use_transform=True):
         )
 
     dataloader = DataLoader(
-        DeblurDataset(image_dir, ps=256, transform=transform),
+        Dataset(image_dir, ps=256, transform=transform),
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
@@ -50,7 +51,7 @@ def test_dataloader(path, batch_size=1, num_workers=0):
         )
 
     dataloader = DataLoader(
-        DeblurDataset(image_dir, is_test=True, transform=transform),
+        Dataset(image_dir, is_test=True, transform=transform),
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
@@ -71,7 +72,7 @@ def valid_dataloader(path, batch_size=1, num_workers=0):
         )
     
     dataloader = DataLoader(
-        DeblurDataset(os.path.join(path, 'val'), is_valid=True, transform=transform),
+        Dataset(os.path.join(path, 'val'), is_valid=True, transform=transform),
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers
@@ -80,7 +81,7 @@ def valid_dataloader(path, batch_size=1, num_workers=0):
     return dataloader
 
 import random
-class DeblurDataset(Dataset):
+class Dataset(TorchDataset):
     def __init__(self, image_dir, transform=None, is_test=False, is_valid=False, ps=None):
         self.image_dir = image_dir
         self.image_list = os.listdir(os.path.join(image_dir, 'hazy/'))
