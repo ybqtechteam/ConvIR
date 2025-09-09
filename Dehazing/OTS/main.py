@@ -24,7 +24,7 @@ def main(args):
 
     if torch.cuda.is_available():
         model.cuda()
-    if args.mode == 'train':
+    if args.mode == 'train' or args.mode == 'concat_train':
         print('Training mode: ', args.phase)
         
         if args.phase == 'easy':
@@ -46,11 +46,11 @@ if __name__ == '__main__':
     # Directories
     parser.add_argument('--model_name', default='ConvIR', type=str)
     parser.add_argument('--data_dir', type=str, default='')
-    parser.add_argument('--mode', default='test', choices=['train', 'test', 'subset_test'], type=str)
+    parser.add_argument('--mode', default='test', choices=['train', 'test', 'subset_test', 'concat_train'], type=str)
     parser.add_argument('--type', default='small', choices=['small', 'base', 'large'], type=str)
 
     # Train
-    parser.add_argument('--batch_size', type=int, default=4)
+    parser.add_argument('--batch_size', type=int, default=2)
     parser.add_argument('--learning_rate', type=float, default=1e-4)
     parser.add_argument('--weight_decay', type=float, default=0)
     parser.add_argument('--num_epoch', type=int, default=300)

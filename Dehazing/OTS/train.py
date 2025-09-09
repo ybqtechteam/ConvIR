@@ -7,7 +7,7 @@ from valid import _valid, _valid_CL
 import torch.nn.functional as F
 import torch.nn as nn
 from colorama import Fore
-
+from data.concat_data_load import _train_concat_dataloader
 from warmup_scheduler import GradualWarmupScheduler
 from early import EarlyStopping
 
@@ -16,7 +16,13 @@ def _train(model, args):
     criterion = torch.nn.L1Loss()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.9, 0.999), eps=1e-8)
-    dataloader = train_dataloader(args.data_dir, args.batch_size, args.num_worker)
+
+    
+    if args.mode == 'train':
+        dataloader = train_dataloader(args.data_dir, args.batch_size, args.num_worker)
+    elif args.mode == 'concat_train':
+        dataloader = _train_concat_dataloader(args.batch_size, args.num_worker)
+    
     max_iter = len(dataloader)
     warmup_epochs=1
     scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.num_epoch-warmup_epochs, eta_min=1e-6)
@@ -51,7 +57,7 @@ def _train(model, args):
         iter_timer.tic()
         for iter_idx, batch_data in enumerate(dataloader):
 
-            input_img, label_img = batch_data
+            input_img, label_img, _ = batch_data
             input_img = input_img.to(device)
             label_img = label_img.to(device)
 

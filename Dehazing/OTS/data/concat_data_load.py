@@ -42,7 +42,7 @@ class ConcatDataset(Dataset):
             label = F.to_tensor(label)
 
         parts = self.data[idx]['image'].parts
-        name = parts[-3] + '_' + parts[-1]
+        name = parts[-4] + '_' + parts[-1]
         
         return image, label, name
 
@@ -81,32 +81,117 @@ class RandomSampler(Sampler):
 
 
 def test_subset_dataloader(subset_ratio, batch_size=1, num_workers=0):
-    print('Test dataloader')
+    print('Subset Test dataloader')
+    
 
     datasets = {
             1 : {
-                'dir' : Path('dataset/combined_test_set/Dense_Haze'),
-                'images': sorted(os.listdir(Path('dataset/combined_test_set/Dense_Haze/hazy')), key=lambda x: int(x.split('.')[0])),
+                'dir' : Path(f'dataset/benchmark_splitted/Dense_Haze/test/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/Dense_Haze/test/hazy')), key=lambda x: int(x.split('.')[0])),
             },
             
             2: {
-                'dir' : Path('dataset/combined_test_set/I-HAZE'),
-                'images' : sorted(os.listdir(Path('dataset/combined_test_set/I-HAZE/hazy')), key=lambda x: int(x.split('.')[0])),
+                'dir' : Path(f'dataset/benchmark_splitted/I-HAZE/test/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/I-HAZE/test/hazy')), key=lambda x: int(x.split('.')[0])),
             },
 
             3: {
-                'dir' : Path('dataset/combined_test_set/O-HAZY'),
-                'images' : sorted(os.listdir(Path('dataset/combined_test_set/O-HAZY/hazy')), key=lambda x: int(x.split('.')[0])),
+                'dir' : Path(f'dataset/benchmark_splitted/O-HAZE/test/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/O-HAZE/test/hazy')), key=lambda x: int(x.split('.')[0])),
             },
 
             4: {
-                'dir' : Path('dataset/combined_test_set/NH-HAZE'),
-                'images' : sorted(os.listdir(Path('dataset/combined_test_set/NH-HAZE/hazy')), key=lambda x: int(x.split('.')[0])),
-            },
+                'dir' : Path(f'dataset/benchmark_splitted/NH-HAZE/test/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/NH-HAZE/test/hazy')), key=lambda x: int(x.split('.')[0])),
+            }, 
 
             5: {
-                'dir' : Path('dataset/combined_test_set/synthetic'),
-                'images' : sorted(os.listdir(Path('dataset/combined_test_set/synthetic/hazy')), key=lambda x: int(x.split('.')[0])),
+                'dir' : Path(f'dataset/custom_dataset_splitted/test/'),
+                'images': sorted(os.listdir(Path(f'dataset/custom_dataset_splitted/test/hazy')), key=lambda x: int(x.split('.')[0])),
+            }
+        }
+    
+
+
+
+    transform = PairCompose(
+            [
+                PairResize((640, 480)),
+                PairToTensor()
+            ]
+        )
+
+    dataset = ConcatDataset(datasets, transform=transform)
+    sampler = RandomSampler(len(dataset), subset_ratio=subset_ratio, shuffle=False)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=False, sampler=sampler)
+    return dataloader
+
+
+
+def _train_concat_dataloader(batch_size, num_workers):
+    print('Concat train dataloader')
+
+    datasets = {
+            1 : {
+                'dir' : Path(f'dataset/benchmark_splitted/Dense_Haze/train/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/Dense_Haze/train/hazy')), key=lambda x: int(x.split('.')[0])),
+            },
+            
+            2: {
+                'dir' : Path(f'dataset/benchmark_splitted/I-HAZE/train/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/I-HAZE/train/hazy')), key=lambda x: int(x.split('.')[0])),
+            },
+
+            3: {
+                'dir' : Path(f'dataset/benchmark_splitted/O-HAZE/train/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/O-HAZE/train/hazy')), key=lambda x: int(x.split('.')[0])),
+            },
+
+            4: {
+                'dir' : Path(f'dataset/benchmark_splitted/NH-HAZE/train/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/NH-HAZE/train/hazy')), key=lambda x: int(x.split('.')[0])),
+            }
+        }
+    
+
+    transform = PairCompose(
+            [
+                PairResize((640, 480)),
+                PairRandomHorizontalFlip(),
+                PairRandomVerticalFlip(),
+                PairRandomRotation(degrees=30),
+                PairToTensor()
+            ]
+        )
+
+    dataset = ConcatDataset(datasets, transform=transform)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True, drop_last=True)
+    return dataloader
+
+
+
+def _valid_concat_dataloader(batch_size, num_workers):
+    print('Concat train dataloader')
+
+    datasets = {
+            1 : {
+                'dir' : Path(f'dataset/benchmark_splitted/Dense_Haze/val/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/Dense_Haze/val/hazy')), key=lambda x: int(x.split('.')[0])),
+            },
+            
+            2: {
+                'dir' : Path(f'dataset/benchmark_splitted/I-HAZE/val/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/I-HAZE/val/hazy')), key=lambda x: int(x.split('.')[0])),
+            },
+
+            3: {
+                'dir' : Path(f'dataset/benchmark_splitted/O-HAZE/val/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/O-HAZE/val/hazy')), key=lambda x: int(x.split('.')[0])),
+            },
+
+            4: {
+                'dir' : Path(f'dataset/benchmark_splitted/NH-HAZE/val/'),
+                'images': sorted(os.listdir(Path(f'dataset/benchmark_splitted/NH-HAZE/val/hazy')), key=lambda x: int(x.split('.')[0])),
             }
         }
     
@@ -119,6 +204,5 @@ def test_subset_dataloader(subset_ratio, batch_size=1, num_workers=0):
         )
 
     dataset = ConcatDataset(datasets, transform=transform)
-    sampler = RandomSampler(len(dataset), subset_ratio=subset_ratio, shuffle=False)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=False, sampler=sampler)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=False)
     return dataloader

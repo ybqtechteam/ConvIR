@@ -5,11 +5,16 @@ from utils import Adder
 import os
 from skimage.metrics import peak_signal_noise_ratio
 import torch.nn.functional as f
-
+from data.concat_data_load import _valid_concat_dataloader
 
 def _valid(model, args, ep):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    ots = valid_dataloader(args.data_dir, batch_size=1, num_workers=0)
+
+    if args.mode == 'train':
+        ots = valid_dataloader(args.data_dir, batch_size=1, num_workers=0)
+    elif args.mode == 'concat_train':
+        ots = _valid_concat_dataloader(batch_size=1, num_workers=0)
+    
     model.eval()
     psnr_adder = Adder()
 
@@ -17,7 +22,7 @@ def _valid(model, args, ep):
         print('Start Evaluation')
         factor = 32
         for idx, data in enumerate(ots):
-            input_img, label_img = data
+            input_img, label_img, _ = data
             input_img = input_img.to(device)
 
             h, w = input_img.shape[2], input_img.shape[3]

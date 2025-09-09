@@ -123,7 +123,7 @@ class DeblurDataset(Dataset):
         if self.is_test:
             name = self.image_list[idx]
             return image, label, name
-        return image, label
+        return image, label, None
 
 
 
