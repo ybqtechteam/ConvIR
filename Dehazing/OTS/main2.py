@@ -61,5 +61,5 @@ if __name__ == '__main__':
     os.system(command)
     command = 'cp -r ' + 'data ' + args.model_save_dir
     os.system(command)
-    print(args)
+    print(args.__dict__)
     main(args)

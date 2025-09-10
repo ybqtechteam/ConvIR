@@ -1,5 +1,5 @@
 #* Directories
-model_name: concat_train_on_all_benchmark # experiment name
+model_name: synthetic_dataset # experiment name
 mode: subset_test      # options: 'train', 'test', 'subset_test', 'concat_train'
 type: small       # options: 'small', 'base', 'large'
 
@@ -7,18 +7,13 @@ data_dir: null  # folder for normal train, val and test
 
 data_curriculum_learning_dir: null # list of folders for Curriculum Learning
 
-data_concat_train_dir: # list of folders for training on multiple datasets
-  - dataset/benchmark_splitted/Dense_Haze
-  - dataset/benchmark_splitted/I-HAZE
-  - dataset/benchmark_splitted/O-HAZE
-  - dataset/benchmark_splitted/NH-HAZE
+data_concat_train_dir: null
 
 test_subset_dir:  # list of folders for testing on multiple datasets and tested with random sampling
   - dataset/benchmark_splitted/Dense_Haze
   - dataset/benchmark_splitted/I-HAZE
   - dataset/benchmark_splitted/O-HAZE
   - dataset/benchmark_splitted/NH-HAZE
-  - dataset/custom_dataset_splitted
 
 
 #* train
@@ -35,11 +30,14 @@ phase: easy  # options for Curriculum Learning: 'easy', 'medium', 'hard', 'extre
 patience: 50  # for early stopping
 
 #* test
-test_model: RESULTS/concat_train_on_all_benchmark/ConvIR/OTS/Best.pkl  # path to model to be tested
+test_model: RESULTS/EXP1/synthetic_dataset/ConvIR/OTS/Best.pkl # path to model to be tested
 save_image: true  # options: true, false
 number_subsets: 10  # number of subsets for random sampling of the test set
-subset_ratio: 0.6  # ratio of images to sample for each subset
+subset_ratio: 0.7  # ratio of images to sample for each subset
 
 #* logging
-model_save_dir: results/concat_train_on_all_benchmark/ConvIR/OTS/  # directory to save models
-result_dir: results/concat_train_on_all_benchmark/test  # directory to save test results
+model_save_dir: results/ConvIR/OTS/  # directory to save models
+result_dir: results/synthetic_dataset/test  # directory to save test results
+
+notes: |
+  Model trained in configurations/EXP1/synthetic_dataset and tested only on all benchmark datasets
