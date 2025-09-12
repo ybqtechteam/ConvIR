@@ -33,7 +33,7 @@ subset_ratio: 0.6  # ratio of images to sample for each subset
 
 #* logging
 model_save_dir: results/ConvIR/OTS/  # directory to save models
-result_dir: results/baseline_myhaze/test  # directory to save test results
+result_dir: results/baseline/test  # directory to save test results
 
 
 notes: |

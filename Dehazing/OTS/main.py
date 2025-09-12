@@ -24,6 +24,7 @@ def main(args):
 
     if torch.cuda.is_available():
         model.cuda()
+    
     if args.mode == 'train' or args.mode == 'concat_train':
         print('Training mode: ', args.phase)
         

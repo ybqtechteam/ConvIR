@@ -7,6 +7,7 @@ from skimage.metrics import peak_signal_noise_ratio
 import torch.nn.functional as f
 from data.concat_data_load import _valid_concat_dataloader
 
+
 def _valid(model, args, ep):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -21,7 +22,7 @@ def _valid(model, args, ep):
     with torch.no_grad():
         print('Start Evaluation')
         factor = 32
-        for idx, data in enumerate(dataloader):
+        for _, data in enumerate(dataloader):
             input_img, label_img, _ = data
             input_img = input_img.to(device)
 
@@ -44,7 +45,6 @@ def _valid(model, args, ep):
             psnr = peak_signal_noise_ratio(p_numpy, label_numpy, data_range=1)
 
             psnr_adder(psnr)
-            # print('\r%03d'%idx, end=' ')
 
     print('\n')
     model.train()
@@ -85,7 +85,7 @@ def _valid_CL(model, args, ep):
     with torch.no_grad():
         print('Start Evaluation')
         factor = 32
-        for idx, data in enumerate(ots):
+        for _, data in enumerate(ots):
             input_img, label_img, _ = data
             input_img = input_img.to(device)
 
@@ -108,7 +108,6 @@ def _valid_CL(model, args, ep):
             psnr = peak_signal_noise_ratio(p_numpy, label_numpy, data_range=1)
 
             psnr_adder(psnr)
-            # print('\r%03d'%idx, end=' ')
 
     print('\n')
     model.train()

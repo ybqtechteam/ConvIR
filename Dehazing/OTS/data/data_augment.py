@@ -20,7 +20,7 @@ class PairRandomCrop(transforms.RandomCrop):
             image = F.pad(image, (0, self.size[0] - image.size[1]), self.fill, self.padding_mode)
             label = F.pad(label, (0, self.size[0] - image.size[1]), self.fill, self.padding_mode)
 
-        i, j, h, w = self.get_params(image, self.size)
+        i, j, w, h = self.get_params(image, self.size)
 
         return F.crop(image, i, j, h, w), F.crop(label, i, j, h, w)
 
@@ -82,16 +82,7 @@ class PairResize(transforms.Resize):
             tuple: Resized image and label.
         """
         h, w = self.size
-
-        # width, height = image.size
-
         size = (w, h)
-
-        # if width > height:
-        #     size = (w, h)
-        # else:
-        #     size = (h, w)
-
         return F.resize(image, size), F.resize(label, size)
 
 

@@ -1,5 +1,5 @@
 import os, math
-import torch
+import torch, random
 import numpy as np
 from PIL import Image as Image
 from data import *
@@ -27,7 +27,7 @@ def train_dataloader(path, batch_size=64, num_workers=0, use_transform=True):
         )
 
     dataloader = DataLoader(
-        Dataset(image_dir, ps=256, transform=transform),
+        Dataset(image_dir, transform=transform),
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
@@ -38,7 +38,6 @@ def train_dataloader(path, batch_size=64, num_workers=0, use_transform=True):
 
 
 def test_dataloader(path, batch_size=1, num_workers=0):
-    # print("test data path: ", path)
     print('Test dataloader')
 
     image_dir = os.path.join(path, 'test')
@@ -51,7 +50,7 @@ def test_dataloader(path, batch_size=1, num_workers=0):
         )
 
     dataloader = DataLoader(
-        Dataset(image_dir, is_test=True, transform=transform),
+        Dataset(image_dir, transform=transform),
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
@@ -72,7 +71,7 @@ def valid_dataloader(path, batch_size=1, num_workers=0):
         )
     
     dataloader = DataLoader(
-        Dataset(os.path.join(path, 'val'), is_valid=True, transform=transform),
+        Dataset(os.path.join(path, 'val'), transform=transform),
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers
@@ -80,40 +79,21 @@ def valid_dataloader(path, batch_size=1, num_workers=0):
 
     return dataloader
 
-import random
+
 class Dataset(TorchDataset):
-    def __init__(self, image_dir, transform=None, is_test=False, is_valid=False, ps=None):
+    def __init__(self, image_dir, transform=None):
         self.image_dir = image_dir
         self.image_list = os.listdir(os.path.join(image_dir, 'hazy/'))
         self._check_image(self.image_list)
         self.image_list.sort()
         self.transform = transform
-        self.is_test = is_test
-        self.is_valid = is_valid
-        self.ps = ps
     
     def __len__(self):
         return len(self.image_list)
 
     def __getitem__(self, idx):
         image = Image.open(os.path.join(self.image_dir, 'hazy', self.image_list[idx])).convert('RGB')
-        if self.is_valid or self.is_test:      
-            label = Image.open(os.path.join(self.image_dir, 'gt', self.image_list[idx].split('_')[0])).convert('RGB')
-        else:
-            label = Image.open(os.path.join(self.image_dir, 'gt', self.image_list[idx].split('_')[0])).convert('RGB')
-        ps = self.ps
-
-        # if self.ps is not None:
-        #     image = F.to_tensor(image)
-        #     label = F.to_tensor(label)
-
-        #     hh, ww = label.shape[1], label.shape[2]
-
-        #     rr = random.randint(0, hh-ps)
-        #     cc = random.randint(0, ww-ps)
-            
-        #     image = image[:, rr:rr+ps, cc:cc+ps]
-        #     label = label[:, rr:rr+ps, cc:cc+ps]
+        label = Image.open(os.path.join(self.image_dir, 'gt', self.image_list[idx])).convert('RGB')
 
         if self.transform:
             image, label = self.transform(image, label)
@@ -121,12 +101,7 @@ class Dataset(TorchDataset):
             image = F.to_tensor(image)
             label = F.to_tensor(label)
 
-        if self.is_test:
-            name = self.image_list[idx]
-            return image, label, name
-        return image, label, None
-
-
+        return image, label, self.image_list[idx]
 
     @staticmethod
     def _check_image(lst):

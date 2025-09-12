@@ -113,10 +113,27 @@ class SubsetAnalyzer:
         plt.close('all')
     
 
-    # TODO: implementare la funzione che prende in input piu dataframe e fa il boxplot comparativo. Assegnare un nome a ciascun dataframe
     @staticmethod
-    def boxplot_compare_per_metric(self, dataframes_path: List[str]):
-        pass
+    def boxplot_compare_per_metric(dataframes_path: List[str], save: bool = False):
+        metrics = pd.read_csv(dataframes_path[0]).columns.to_list()
+        metrics.remove('time') if 'time' in metrics else None
+        metrics.pop(0)
+        
+        for m in metrics:
+            dfs = [pd.read_csv(f, usecols=[m]) for f in dataframes_path]
+            df = pd.concat(dfs, axis=1)
+            df = df.iloc[:-2]
+            df.columns = [f"Model {i+1}" for i in range(len(dfs))]
+
+            pd.plotting.boxplot(df, column=df.columns.to_list(), grid=True)
+            plt.title(f'Boxplot Comparison for {m}')
+            if save:
+                plt.savefig(f"boxplot_comparison_{m}.png")
+            plt.show()
+            plt.clf()
+        
+        plt.close('all')
+
 
 
 
@@ -131,9 +148,14 @@ if __name__ == "__main__":
     # model = build_net('large')
     # summary(model)
 
-    analyzer = SubsetAnalyzer(folder_path='.', columns=["psnr", "ssim", "time"])
-    analyzer.update(25, 1, 5)
-    analyzer.update(30, 0.5, 10)
-    analyzer.update(35, 0, 15)
-    analyzer.show_csv(save=True)
-    analyzer.boxplot(save=True)
+    # analyzer = SubsetAnalyzer(folder_path='.', columns=["psnr", "ssim", "time"])
+    # analyzer.update(25, 1, 5)
+    # analyzer.update(30, 0.5, 10)
+    # analyzer.update(35, 0, 15)
+    # analyzer.show_csv(save=True)
+    # analyzer.boxplot(save=True)
+
+    path = ['RESULTS/EXP1/baseline/ConvIR/test/plots/subset_analysis.csv', 
+            'RESULTS/EXP1/synthetic_dataset/ConvIR/test/plots/subset_analysis.csv']
+    
+    SubsetAnalyzer.boxplot_compare_per_metric(path, save=True)
