@@ -32,9 +32,6 @@ def _valid(model, args, ep):
             padw = W-w if w%factor!=0 else 0
             input_img = f.pad(input_img, (0, padw, 0, padh), 'reflect')
 
-            if not os.path.exists(os.path.join(args.result_dir, '%d' % (ep))):
-                os.mkdir(os.path.join(args.result_dir, '%d' % (ep)))
-
             pred = model(input_img)[2]
             pred = pred[:,:,:h,:w]
 
@@ -94,9 +91,6 @@ def _valid_CL(model, args, ep):
             padh = H-h if h%factor!=0 else 0
             padw = W-w if w%factor!=0 else 0
             input_img = f.pad(input_img, (0, padw, 0, padh), 'reflect')
-
-            if not os.path.exists(os.path.join(args.result_dir, '%d' % (ep))):
-                os.mkdir(os.path.join(args.result_dir, '%d' % (ep)))
 
             pred = model(input_img)[2]
             pred = pred[:,:,:h,:w]
