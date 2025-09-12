@@ -10,9 +10,11 @@ from colorama import Fore
 from data.concat_data_load import _train_concat_dataloader
 from warmup_scheduler import GradualWarmupScheduler
 from early import EarlyStopping
+from clearml import Task
 
 
 def _train(model, args):
+    task = Task.current_task()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     criterion = torch.nn.L1Loss()
 
@@ -40,6 +42,7 @@ def _train(model, args):
     epoch_fft_adder = Adder()
     iter_pixel_adder = Adder()
     iter_fft_adder = Adder()
+    epoch_total_loss_adder = Adder()
     epoch_timer = Timer('m')
     iter_timer = Timer('m')
     best_psnr=-1
@@ -99,6 +102,8 @@ def _train(model, args):
             epoch_pixel_adder(loss_content.item())
             epoch_fft_adder(loss_fft.item())
 
+            epoch_total_loss_adder(loss.item())
+
             if (iter_idx + 1) % args.print_freq == 0:
                 print("Time: %7.4f Epoch: %03d Iter: %4d/%4d LR: %.10f Loss content: %7.4f Loss fft: %7.4f" % (
                     iter_timer.toc(), epoch_idx, iter_idx + 1, max_iter, scheduler.get_lr()[0], iter_pixel_adder.average(),
@@ -113,14 +118,18 @@ def _train(model, args):
         print("EPOCH: %02d\nElapsed time: %4.2f Epoch Pixel Loss: %7.4f Epoch FFT Loss: %7.4f" % (
             epoch_idx, epoch_timer.toc(), epoch_pixel_adder.average(), epoch_fft_adder.average()))
         
+        task.get_logger().report_scalar("TRAIN", "loss", iteration=epoch_idx, value=epoch_total_loss_adder.average())
+        
         epoch_fft_adder.reset()
         epoch_pixel_adder.reset()
+        epoch_total_loss_adder.reset()
         scheduler.step()
 
         if epoch_idx % args.valid_freq == 0:
             val = _valid(model, args, epoch_idx)
+            task.get_logger().report_scalar("VALIDATION", "PSNR", iteration=epoch_idx, value=val)
             print('%03d epoch \n CURRENT Average PSNR %.2f dB' % (epoch_idx, val))
-            writer.add_scalar('PSNR', val, epoch_idx)
+            # writer.add_scalar('PSNR', val, epoch_idx)
             if val >= best_psnr:
                 print(Fore.GREEN + 'Saving best model at epoch %d with PSNR %.2f' % (epoch_idx, val) + Fore.RESET)
                 torch.save({'model': model.state_dict()}, os.path.join(args.model_save_dir, 'Best.pkl'))
@@ -172,7 +181,8 @@ def _train(model, args):
 
 
 
-def _train_CL(model, args):
+def _train_CL(model, args, task):
+    task = Task.current_task()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     criterion = torch.nn.L1Loss()
 
@@ -196,6 +206,7 @@ def _train_CL(model, args):
     epoch_fft_adder = Adder()
     iter_pixel_adder = Adder()
     iter_fft_adder = Adder()
+    epoch_total_loss_adder = Adder()
     epoch_timer = Timer('m')
     iter_timer = Timer('m')
     best_psnr=-1
@@ -255,6 +266,8 @@ def _train_CL(model, args):
             epoch_pixel_adder(loss_content.item())
             epoch_fft_adder(loss_fft.item())
 
+            epoch_total_loss_adder(loss.item())
+
             if (iter_idx + 1) % args.print_freq == 0:
                 print("Time: %7.4f Epoch: %03d Iter: %4d/%4d LR: %.10f Loss content: %7.4f Loss fft: %7.4f" % (
                     iter_timer.toc(), epoch_idx, iter_idx + 1, max_iter, scheduler.get_lr()[0], iter_pixel_adder.average(),
@@ -269,14 +282,18 @@ def _train_CL(model, args):
         print("EPOCH: %02d\nElapsed time: %4.2f Epoch Pixel Loss: %7.4f Epoch FFT Loss: %7.4f" % (
             epoch_idx, epoch_timer.toc(), epoch_pixel_adder.average(), epoch_fft_adder.average()))
         
+        task.get_logger().report_scalar("TRAIN", "loss", iteration=epoch_idx, value=epoch_total_loss_adder.average())
+
         epoch_fft_adder.reset()
         epoch_pixel_adder.reset()
+        epoch_total_loss_adder.reset()
         scheduler.step()
 
         if epoch_idx % args.valid_freq == 0:
             val = _valid_CL(model, args, epoch_idx)
+            task.get_logger().report_scalar("VALIDATION", "PSNR", iteration=epoch_idx, value=val)
             print('%03d epoch \n CURRENT Average PSNR %.2f dB' % (epoch_idx, val))
-            writer.add_scalar('PSNR', val, epoch_idx)
+            # writer.add_scalar('PSNR', val, epoch_idx)
             if val >= best_psnr:
                 print('Saving best model at epoch %d with PSNR %.2f' % (epoch_idx, val))
                 torch.save({'model': model.state_dict()}, os.path.join(args.model_save_dir, 'Best.pkl'))

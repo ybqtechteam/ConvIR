@@ -7,6 +7,7 @@ from train import _train, _train_CL
 from eval import _eval
 from subset_eval import _subset_eval
 from configurations.loader import YAMLLoader
+from clearml import Task, TaskTypes
 
 def main(args):
     # CUDNN
@@ -26,7 +27,9 @@ def main(args):
         model.cuda()
     if args.mode == 'train' or args.mode == 'concat_train':
         print('Training mode: ', args.phase)
-        
+        task = Task.init(project_name=PROJECT_NAME, task_name=args.model_name, task_type=TaskTypes.training)
+        task.connect(args)
+
         if args.phase == 'easy':
             print('Training on easy phase')
             _train(model, args)
@@ -36,17 +39,25 @@ def main(args):
 
     elif args.mode == 'test':
         print('Simple Evaluation')
+        task = Task.init(project_name=PROJECT_NAME, task_name=args.model_name, task_type=TaskTypes.testing)
+        task.connect(args)
         _eval(model, args)
     
     elif args.mode == 'subset_test':
         print('Subset evaluation')
+        task = Task.init(project_name=PROJECT_NAME, task_name=args.model_name, task_type=TaskTypes.testing)
+        task.connect(args)
         _subset_eval(model, args)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', type=str, required=True, help='Path to the config file.')
+    parser.add_argument('-d', '--debug', action='store_true', help='Debug mode.', default=False)
     args = parser.parse_args()
+
+    PROJECT_NAME = "VISTA/ConvIR/Dehazing" if not args.debug else "debug"
+
     args = YAMLLoader(config_path=args.config)
 
     if not os.path.exists(args.model_save_dir):
