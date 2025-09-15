@@ -60,7 +60,7 @@ def _subset_eval(model, args):
                 ssim_val = ssim(f.adaptive_avg_pool2d(pred_clip, (int(H / down_ratio), int(W / down_ratio))), 
                                 f.adaptive_avg_pool2d(label_img, (int(H / down_ratio), int(W / down_ratio))), 
                                 data_range=1, size_average=False)	
-                print('%d iter PSNR_dehazing: %.2f ssim: %f' % (iter_idx + 1, psnr_val, ssim_val))
+                print('%d iter PSNR_deraining: %.2f ssim: %f' % (iter_idx + 1, psnr_val, ssim_val))
                 ssim_adder(ssim_val)
 
                 if args.save_image:

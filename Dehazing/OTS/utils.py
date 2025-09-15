@@ -90,6 +90,8 @@ class SubsetAnalyzer:
         if save:
             df.to_csv(self.folder_path / "subset_analysis.csv", index=True)
 
+        return df
+
     
     def boxplot(self, file: str = None, save: bool = False):
         if file is not None:

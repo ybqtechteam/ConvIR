@@ -99,7 +99,7 @@ def _eval(model, args):
 
         print("Average time: %f" % time_adder.average())
 
-        task.get_logger().report_scalar("TEST", "PSNR", value=psnr_adder.average())
-        task.get_logger().report_scalar("TEST", "SSIM", value=ssim_adder.average())
-        task.get_logger().report_scalar("TEST", "TIME", value=time_adder.average())
+        task.get_logger().report_scalar("TEST", "PSNR", value=psnr_adder.average(), iteration = 0)
+        task.get_logger().report_scalar("TEST", "SSIM", value=ssim_adder.average(), iteration = 0)
+        task.get_logger().report_scalar("TEST", "TIME", value=time_adder.average(), iteration = 0)
 

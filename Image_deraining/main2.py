@@ -6,7 +6,8 @@ from models.ConvIR import build_net
 from train import _train
 from eval import _eval
 from subset_eval import _subset_eval
-
+from configurations.loader import YAMLLoader
+from clearml import Task, TaskTypes
 
 def main(args):
     cudnn.benchmark = True
@@ -25,49 +26,33 @@ def main(args):
     
     if args.mode == 'train' or args.mode == 'concat_train':
         print('Training')
-        # print(model)
+        task = Task.init(project_name=PROJECT_NAME, task_name=args.model_name, task_type=TaskTypes.training)
+        task.connect(args)
         _train(model, args)
 
     elif args.mode == 'test':
         print('Simple Evaluation')
+        task = Task.init(project_name=PROJECT_NAME, task_name=args.model_name, task_type=TaskTypes.testing)
+        task.connect(args)
         _eval(model, args)
     
     elif args.mode == 'subset_test':
         print('Subset evaluation')
+        task = Task.init(project_name=PROJECT_NAME, task_name=args.model_name, task_type=TaskTypes.testing)
+        task.connect(args)
         _subset_eval(model, args)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-
-    # Directories
-    parser.add_argument('--model_name', default='ConvIR', type=str)
-    parser.add_argument('--data_dir', type=str, default='')
-    parser.add_argument('--mode', default='test', choices=['train', 'test', 'subset_test', 'concat_train'], type=str)
-
-    # Train
-    parser.add_argument('--batch_size', type=int, default=2)
-    parser.add_argument('--learning_rate', type=float, default=1e-4)
-    parser.add_argument('--weight_decay', type=float, default=0)
-    parser.add_argument('--num_epoch', type=int, default=300)
-    parser.add_argument('--print_freq', type=int, default=100)
-    parser.add_argument('--num_worker', type=int, default=4)
-    parser.add_argument('--save_freq', type=int, default=1)
-    parser.add_argument('--valid_freq', type=int, default=1)
-    parser.add_argument('--resume', type=str, default='')
-    parser.add_argument('--gamma', type=float, default=0.5)
-    parser.add_argument('--patience', type=int, default=50)
-    parser.add_argument('--num_res', type=int, default=4)
-
-    # Test
-    parser.add_argument('--test_model', type=str, default='')
-    parser.add_argument('--save_image', type=bool, default=False, choices=[True, False])
-    parser.add_argument("--number_subsets", type=int, default=10)
-    parser.add_argument("--subset_ratio", type=float, default=0.5)
-    
+    parser.add_argument('-c', '--config', type=str, required=True, help='Path to the config file.')
+    parser.add_argument('-d', '--debug', action='store_true', help='Debug mode.', default=False)
     args = parser.parse_args()
-    args.model_save_dir = os.path.join('results/', 'ConvIR', 'train/')
-    args.result_dir = os.path.join('results/', args.model_name, 'test')
+
+    PROJECT_NAME = "VISTA/ConvIR/Deraining" if not args.debug else "debug"
+
+    args = YAMLLoader(config_path=args.config)
+
     if not os.path.exists(args.model_save_dir):
         os.makedirs(args.model_save_dir)
     command = 'cp ' + 'models/layers.py ' + args.model_save_dir
@@ -80,5 +65,5 @@ if __name__ == '__main__':
     os.system(command)
     command = 'cp -r ' + 'data ' + args.model_save_dir
     os.system(command)
-    print(args)
+    print(args.__dict__)
     main(args)

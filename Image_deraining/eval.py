@@ -8,18 +8,19 @@ from skimage.metrics import peak_signal_noise_ratio
 import time
 from pytorch_msssim import ssim
 import torch.nn.functional as f
-
+from clearml import Task
 from skimage import img_as_ubyte
 import cv2
 # ---------------------------------------------------
 
 def _eval(model, args):
-    state_dict = torch.load(args.test_model)
-    model.load_state_dict(state_dict['model'])
+    task = Task.current_task()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    state_dict = torch.load(args.test_model, weights_only=True, map_location=device)
+    model.load_state_dict(state_dict['model'])
     dataloader = test_dataloader(args.data_dir, batch_size=1, num_workers=0)
     torch.cuda.empty_cache()
-    adder = Adder()
+    time_adder = Adder()
     model.eval()
     factor = 32
     with torch.no_grad():
@@ -45,7 +46,7 @@ def _eval(model, args):
             torch.cuda.synchronize()
 
             elapsed = time.time() - tm
-            adder(elapsed)
+            time_adder(elapsed)
 
             pred_clip = torch.clamp(pred, 0, 1)
 
@@ -76,5 +77,9 @@ def _eval(model, args):
         print('The average PSNR is %.2f dB' % (psnr_adder.average()))
         print('The average SSIM is %.4f dB' % (ssim_adder.average()))
 
-        print("Average time: %f" % adder.average())
+        print("Average time: %f" % time_adder.average())
+
+        task.get_logger().report_scalar("TEST", "PSNR", value=psnr_adder.average(), iteration = 0)
+        task.get_logger().report_scalar("TEST", "SSIM", value=ssim_adder.average(), iteration = 0)
+        task.get_logger().report_scalar("TEST", "TIME", value=time_adder.average(), iteration = 0)
 

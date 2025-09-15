@@ -6,17 +6,25 @@ from torch.utils.tensorboard import SummaryWriter
 from valid import _valid
 import torch.nn.functional as F
 import torch.nn as nn
-from early import EarlyStopping
-
+from colorama import Fore
+from data.concat_data_load import _train_concat_dataloader
 from warmup_scheduler import GradualWarmupScheduler
+from early import EarlyStopping
+from clearml import Task
 
 
 def _train(model, args):
+    task = Task.current_task()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     criterion = torch.nn.L1Loss()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.9, 0.999), eps=1e-8)
-    dataloader = train_dataloader(args.data_dir, args.batch_size, args.num_worker)
+    
+    if args.mode == 'train':
+        dataloader = train_dataloader(args.data_dir, args.batch_size, args.num_worker)
+    elif args.mode == 'concat_train':
+        dataloader = _train_concat_dataloader(args.data_concat_train_dir, args.batch_size, args.num_worker)
+    
     max_iter = len(dataloader)
     warmup_epochs=3
     scheduler_cosine = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.num_epoch-warmup_epochs, eta_min=1e-6)
@@ -25,30 +33,22 @@ def _train(model, args):
     epoch = 1
     if args.resume:
         print('Resume from %s' % args.resume)
-        state = torch.load(args.resume, weights_only=True)
-        # epoch = state['epoch']
-        # optimizer.load_state_dict(state['optimizer'])
+        state = torch.load(args.resume, weights_only=True, map_location=device)
         model.load_state_dict(state['model'])
-        # print('Resume from %d'%epoch)
-        # epoch += 1
     else:
         print("Training from scratch")
-
-    # print("]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]")
-    # print(model)
-
-
 
     writer = SummaryWriter()
     epoch_pixel_adder = Adder()
     epoch_fft_adder = Adder()
     iter_pixel_adder = Adder()
     iter_fft_adder = Adder()
+    epoch_total_loss_adder = Adder()
     epoch_timer = Timer('m')
     iter_timer = Timer('m')
     best_psnr=-1
 
-    early_stopping = EarlyStopping(patience=30)
+    early_stopping = EarlyStopping(patience=args.patience)
 
     for epoch_idx in range(epoch, args.num_epoch + 1):
 
@@ -56,7 +56,7 @@ def _train(model, args):
         iter_timer.tic()
         for iter_idx, batch_data in enumerate(dataloader):
 
-            input_img, label_img = batch_data
+            input_img, label_img, _ = batch_data
             input_img = input_img.to(device)
             label_img = label_img.to(device)
 
@@ -103,6 +103,8 @@ def _train(model, args):
             epoch_pixel_adder(loss_content.item())
             epoch_fft_adder(loss_fft.item())
 
+            epoch_total_loss_adder(loss.item())
+
             if (iter_idx + 1) % args.print_freq == 0:
                 print("Time: %7.4f Epoch: %03d Iter: %4d/%4d LR: %.10f Loss content: %7.4f Loss fft: %7.4f" % (
                     iter_timer.toc(), epoch_idx, iter_idx + 1, max_iter, scheduler.get_lr()[0], iter_pixel_adder.average(),
@@ -113,40 +115,32 @@ def _train(model, args):
                 iter_timer.tic()
                 iter_pixel_adder.reset()
                 iter_fft_adder.reset()
-        # overwrite_name = os.path.join(args.model_save_dir, 'model.pkl')
-        # # torch.save({'model': model.state_dict(),
-        #             'optimizer': optimizer.state_dict(),
-        #             'epoch': epoch_idx}, overwrite_name)
-
-        # if epoch_idx % args.save_freq == 0:
-        #     save_name = os.path.join(args.model_save_dir, 'model_%d.pkl' % epoch_idx)
-        #     torch.save({'model': model.state_dict()}, save_name)
 
         print("EPOCH: %02d\nElapsed time: %4.2f Epoch Pixel Loss: %7.4f Epoch FFT Loss: %7.4f" % (
             epoch_idx, epoch_timer.toc(), epoch_pixel_adder.average(), epoch_fft_adder.average()))
         
+        task.get_logger().report_scalar("TRAIN", "loss", iteration=epoch_idx, value=epoch_total_loss_adder.average())
+        
         epoch_fft_adder.reset()
         epoch_pixel_adder.reset()
+        epoch_total_loss_adder.reset()
         scheduler.step()
         
         if epoch_idx % args.valid_freq == 0:
             val_rain  = _valid(model, args, epoch_idx)
+            task.get_logger().report_scalar("VALIDATION", "PSNR", iteration=epoch_idx, value=val_rain)
             print('%03d epoch \n CURRENT Average DeRain PSNR %.2f dB' % (epoch_idx, val_rain))
-            writer.add_scalar('PSNR_DeRain', val_rain, epoch_idx)
+            # writer.add_scalar('PSNR_DeRain', val_rain, epoch_idx)
             if val_rain >= best_psnr:
-                print('Saving best model at epoch %d with PSNR %.2f' % (epoch_idx, val_rain))
+                print(Fore.GREEN + 'Saving best model at epoch %d with PSNR %.2f' % (epoch_idx, val_rain) + Fore.RESET)
                 torch.save({'model': model.state_dict()}, os.path.join(args.model_save_dir, 'Best.pkl'))
                 best_psnr = val_rain
 
-
-
         early_stopping(val_rain) 
 
-
         if early_stopping.early_stop:
-            print("Early stopping triggered")
+            print(Fore.RED + "Early stopping triggered" + Fore.RESET)
             break
-    
     
     save_name = os.path.join(args.model_save_dir, 'Final.pkl')
     torch.save({'model': model.state_dict()}, save_name)
