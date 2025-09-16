@@ -12,10 +12,6 @@ from clearml import Task, TaskTypes
 def main(args):
     cudnn.benchmark = True
 
-    if not os.path.exists('results/'):
-        os.makedirs(args.model_save_dir)
-    if not os.path.exists('results/' + args.model_name + '/'):
-        os.makedirs('results/' + args.model_name + '/')
     if not os.path.exists(args.result_dir):
         os.makedirs(args.result_dir)
 
