@@ -97,6 +97,7 @@ class SubsetAnalyzer:
         if file is not None:
             df = pd.read_csv(file)
             df = df.drop(df.columns[0], axis=1)
+            df = df.iloc[:-2]
         else:
             df = self.df.copy()
         

@@ -1,0 +1,36 @@
+#* Directories
+model_name: small_version_RR_LHP
+mode: test     # options: 'train', 'test', 'concat_train', 'subset_test'
+
+data_dir: dataset/LHP
+
+data_concat_train_dir: null
+
+test_subset_dir: null
+
+#* Train
+batch_size: 2
+learning_rate: 0.0001
+weight_decay: 0
+num_epoch: 300
+print_freq: 100
+num_worker: 1
+save_freq: 1
+valid_freq: 1
+resume: null
+gamma: 0.5
+patience: 50  # Increased patience for early stopping
+num_res: 4  # Number of residual blocks in the model
+
+#* Test
+test_model: results3/ConvIR/train/Best.pkl
+save_image: true
+number_subsets: 10  # number of subsets for random sampling of the test set
+subset_ratio: 0.6  # ratio of images to sample for each subset
+
+#* Logging
+model_save_dir: results3/ConvIR/train/
+result_dir: results3/small_version_RR_LHP/test 
+
+notes: |
+  small version trained on LHP
