@@ -81,8 +81,8 @@ class PairResize(transforms.Resize):
         Returns:
             tuple: Resized image and label.
         """
-        h, w = self.size
-        size = (w, h)
+        w, h = self.size
+        size = (h, w)
         return F.resize(image, size), F.resize(label, size)
 
 

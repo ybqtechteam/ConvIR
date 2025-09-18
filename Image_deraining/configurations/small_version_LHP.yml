@@ -1,5 +1,5 @@
 #* Directories
-model_name: small_version_RR_LHP
+model_name: small_version_LHP
 mode: test     # options: 'train', 'test', 'concat_train', 'subset_test'
 
 data_dir: dataset/LHP
@@ -30,7 +30,7 @@ subset_ratio: 0.6  # ratio of images to sample for each subset
 
 #* Logging
 model_save_dir: results3/ConvIR/train/
-result_dir: results3/small_version_RR_LHP/test 
+result_dir: results3/small_version_LHP/test 
 
 notes: |
   small version trained on LHP

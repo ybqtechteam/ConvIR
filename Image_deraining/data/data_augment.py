@@ -26,13 +26,50 @@ class PairRandomCrop(transforms.RandomCrop):
 
 
 class PairCenterCrop(transforms.CenterCrop):
+
+    def __init__(self, size, fill=128, padding_mode='constant'):
+        super().__init__(size)
+        self.fill = fill
+        self.padding_mode = padding_mode
+        self._is_padded = False
+
+        if isinstance(self.size, tuple):
+            w, h = self.size
+            self.size = (h, w)
+    
+
     def __call__(self, image, label):
+        self._is_padded = False
+        
+        image = self._pad(image)
+        label = self._pad(label)
+        
+        if self._is_padded:
+            return image, label
+        
+        return super().__call__(image), super().__call__(label)
+    
+    def _pad(self, img):
+        img_w, img_h = img.size
+        crop_h, crop_w = self.size
 
-        image = F.center_crop(image, (self.size[0], self.size[0]))
-        label = F.center_crop(label, (self.size[0], self.size[0]))
+        if crop_w > img_w or crop_h > img_h:
+            padding_ltrb = [
+                (crop_w - img_w) // 2 if crop_w > img_w else 0,  # left
+                (crop_h - img_h) // 2 if crop_h > img_h else 0,  # top
+                (crop_w - img_w + 1) // 2 if crop_w > img_w else 0,  # right
+                (crop_h - img_h + 1) // 2 if crop_h > img_h else 0   # bottom
+            ]
+            img = F.pad(img, padding_ltrb, self.fill, self.padding_mode)
+            self._is_padded = True
+            img_w, img_h = img.size
 
-        return image, label
-
+            if crop_w == img_w and crop_h == img_h:
+                return img
+        
+        crop_t = int(round((img_h - crop_h) / 2.0))
+        crop_l = int(round((img_w - crop_w) / 2.0))
+        return F.crop(img, crop_t, crop_l, crop_h, crop_w)
 
 class PairCompose(transforms.Compose):
     def __call__(self, image, label):
@@ -81,6 +118,14 @@ class PairToTensor(transforms.ToTensor):
 
 
 class PairResize(transforms.Resize):
+
+    def __init__(self, size, interpolation=transforms.InterpolationMode.BILINEAR):
+        super().__init__(size, interpolation)
+        
+        if isinstance(self.size, tuple):
+            w, h = self.size
+            self.size = (h, w)
+
     def __call__(self, image, label):
         """
         Args:
@@ -90,9 +135,9 @@ class PairResize(transforms.Resize):
         Returns:
             tuple: Resized image and label.
         """
-        h, w = self.size
-        size = (w, h)
-        return F.resize(image, size), F.resize(label, size)
+
+        return super().__call__(image), super().__call__(label)
+
 
 class PairRandomRotation(transforms.RandomRotation):
     def __call__(self, image, label):
@@ -100,3 +145,52 @@ class PairRandomRotation(transforms.RandomRotation):
             angle = self.get_params(self.degrees)
             return F.rotate(image, angle), F.rotate(label, angle)
         return image, label
+
+
+
+
+if __name__ == '__main__':
+    import PIL 
+
+    PATH = '/home/lorenzomignone/gitlab/vista/models/ConvIR/Image_deraining/dataset/LHP/train/input/97.png'
+    PATH = '/home/lorenzomignone/gitlab/vista/models/ConvIR/Image_deraining/dataset/LHP/train/target/996.png'
+    PATH = '/home/lorenzomignone/gitlab/vista/models/ConvIR/Image_deraining/dataset/LHP/train/input/995.png'
+    PATH = '/home/lorenzomignone/gitlab/vista/models/ConvIR/Image_deraining/dataset/LHP/train/input/946.png'
+
+    PATH = '/home/lorenzomignone/gitlab/vista/models/ConvIR/Image_deraining/dataset/RealRain-1k/RealRain-1k-H/test/input/87.png'
+    PATH = '/home/lorenzomignone/gitlab/vista/models/ConvIR/Image_deraining/dataset/RealRain-1k/RealRain-1k-H/test/input/885.png'
+    PATH = '/home/lorenzomignone/gitlab/vista/models/ConvIR/Image_deraining/dataset/RealRain-1k/RealRain-1k-H/test/input/834.png'
+
+    PATH = '/home/lorenzomignone/gitlab/vista/models/ConvIR/Image_deraining/dataset/LHP/train/input/10.png'
+
+    image = PIL.Image.open(PATH)
+    image.save('normal.png')
+    label = PIL.Image.open(PATH)
+    print('original')
+    print(image.size, label.size)
+
+    # transform = transforms.Resize(480) # (height, width)
+    # img1 = transform(image)
+    # l1 = transform(label)
+    # print('t1')
+    # print(img1.size, l1.size)
+    # img1.save('resized1.png')
+
+    t3 = PairResize(480) # (width, height)
+    img3, l3 = t3(image, label)
+    print('t3')
+    print(img3.size, l3.size)
+    img3.save('resized3.png')
+
+    t2 = transforms.CenterCrop((480, 640))
+    img2 = t2(img3)
+    l2 = t2(l3)
+    print('t2')
+    print(img2.size, l2.size)
+    img2.save('CC2.png')
+
+    t4 = PairCenterCrop((640, 480), padding_mode='reflect') # (width, height)
+    img4, l4 = t4(img3, l3)
+    print('t4')
+    print(img4.size, l4.size)
+    img4.save('CC4.png')
