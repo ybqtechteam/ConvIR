@@ -1,4 +1,4 @@
-
+from colorama import Fore
 
 class EarlyStopping:
     
@@ -17,7 +17,7 @@ class EarlyStopping:
             # Miglioramento significativo
             self.best_psnr = val_psnr
             self.counter = 0
-            print("EarlyStopping reset")
+            print(Fore.YELLOW + "EarlyStopping reset" + Fore.RESET)
             
         else:
             # Non migliora abbastanza

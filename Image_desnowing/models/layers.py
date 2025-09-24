@@ -25,7 +25,6 @@ class BasicConv(nn.Module):
     def forward(self, x):
         return self.main(x)
 
-
 class ResBlock(nn.Module):
     def __init__(self, in_channel, out_channel, filter=False):
         super(ResBlock, self).__init__()
@@ -37,7 +36,6 @@ class ResBlock(nn.Module):
 
     def forward(self, x):
         return self.main(x) + x
-
 
 class DeepPoolLayer(nn.Module):
     def __init__(self, k, k_out):
@@ -70,7 +68,6 @@ class DeepPoolLayer(nn.Module):
         resl = self.conv_sum(resl)
 
         return resl
-
 
 class dynamic_filter(nn.Module):
     def __init__(self, inchannels, kernel_size=3, dilation=1, stride=1, group=8):
