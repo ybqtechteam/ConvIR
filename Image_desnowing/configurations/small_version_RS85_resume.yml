@@ -1,0 +1,34 @@
+#* Directories
+model_name: small_version_RS85_resume
+mode: test     # options: 'train', 'test', 'concat_train', 'subset_test'
+data_dir: dataset/Realsnow85
+
+data_concat_train_dir: null
+
+test_subset_dir: null
+
+#* Train
+batch_size: 2
+learning_rate: 0.0002
+weight_decay: 0
+num_epoch: 300
+print_freq: 100
+num_worker: 4
+save_freq: 1
+valid_freq: 1
+resume: ckpt/snow100k-small.pkl
+patience: 50  # Increased patience for early stopping
+version: small
+
+#* Test
+test_model: small_version_RS85_resume/ConvIR/train/Best.pkl
+save_image: true
+number_subsets: 0  # number of subsets for random sampling of the test set
+subset_ratio: 0  # ratio of images to sample for each subset
+
+#* Logging
+model_save_dir: small_version_RS85_resume/ConvIR/train/
+result_dir: small_version_RS85_resume/test 
+
+notes: |
+  small version of the pretrained model trained on RealSnow_85 dataset 

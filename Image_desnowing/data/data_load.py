@@ -27,7 +27,8 @@ def train_dataloader(path, batch_size=64, num_workers=0, use_transform=True):
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
-        pin_memory=True
+        pin_memory=True,
+        drop_last=True
     )
     return dataloader
 

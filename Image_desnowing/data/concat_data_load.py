@@ -138,7 +138,7 @@ def _train_concat_dataloader(folders_path, batch_size, num_workers):
         )
 
     dataset = ConcatDataset(datasets, transform=transform)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True, drop_last=True)
     return dataloader
 
 

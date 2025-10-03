@@ -48,7 +48,7 @@ def _train(model, args):
     iter_timer = Timer('m')
     best_psnr=-1
 
-    early_stopping = EarlyStopping(patience=args.patience)
+    early_stopping = EarlyStopping(patience=args.patience, min_delta=0.05)
 
     for epoch_idx in range(epoch, args.num_epoch + 1):
 
@@ -106,9 +106,9 @@ def _train(model, args):
             epoch_total_loss_adder(loss.item())
 
             if (iter_idx + 1) % args.print_freq == 0:
-                print("Time: %7.4f Epoch: %03d Iter: %4d/%4d LR: %.10f Loss content: %7.4f Loss fft: %7.4f" % (
-                    iter_timer.toc(), epoch_idx, iter_idx + 1, max_iter, scheduler.get_lr()[0], iter_pixel_adder.average(),
-                    iter_fft_adder.average()))
+                # print("Time: %7.4f Epoch: %03d Iter: %4d/%4d LR: %.10f Loss content: %7.4f Loss fft: %7.4f" % (
+                #     iter_timer.toc(), epoch_idx, iter_idx + 1, max_iter, scheduler.get_lr()[0], iter_pixel_adder.average(),
+                #     iter_fft_adder.average()))
                 writer.add_scalar('Pixel Loss', iter_pixel_adder.average(), iter_idx + (epoch_idx-1)* max_iter)
                 writer.add_scalar('FFT Loss', iter_fft_adder.average(), iter_idx + (epoch_idx - 1) * max_iter)
                 
