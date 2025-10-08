@@ -1,0 +1,35 @@
+#* Directories
+model_name: generalization_NH-Haze # experiment name
+mode: test      # options: 'train', 'test', 'subset_test', 'concat_train'
+type: small       # options: 'small', 'base', 'large'
+
+data_dir: dataset/NH-Haze  # folder for normal train, val and test 
+
+data_curriculum_learning_dir: null # list of folders for Curriculum Learning
+
+data_concat_train_dir: null # list of folders for training on multiple datasets
+
+test_subset_dir:  null
+
+#* train
+batch_size: 4
+learning_rate: 0.0001
+weight_decay: 0
+num_epoch: 300
+print_freq: 100
+num_worker: 4
+save_freq: 1
+valid_freq: 1
+resume: null  # path to model to resume training
+phase: easy  # options for Curriculum Learning: 'easy', 'medium', 'hard', 'extreme'. Use easy for normal training without Curriculum Learning
+patience: 30  # for early stopping
+
+#* test
+test_model: ckpt/densehaze-small.pkl # path to model to be tested
+save_image: true  # options: true, false
+number_subsets: 10  # number of subsets for random sampling of the test set
+subset_ratio: 0.6  # ratio of images to sample for each subset
+
+#* logging
+model_save_dir: generalization/NH-Haze/ConvIR/OTS/  # directory to save models
+result_dir: generalization/NH-Haze/test  # directory to save test results
