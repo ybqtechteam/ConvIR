@@ -1,18 +1,13 @@
 #* Directories
-model_name: quantization # experiment name
-mode: subset_test      # options: 'train', 'test', 'subset_test', 'concat_train'
+model_name: onnx # experiment name
+mode: subset_test_onnx      # options: 'train', 'test', 'subset_test', 'concat_train'
 type: small       # options: 'small', 'base', 'large'
 
 data_dir: null  # folder for normal train, val and test 
 
 data_curriculum_learning_dir: null # list of folders for Curriculum Learning
 
-data_concat_train_dir: # list of folders for training on multiple datasets
-  - dataset/benchmark_splitted/Dense_Haze
-  - dataset/benchmark_splitted/I-HAZE
-  - dataset/benchmark_splitted/O-HAZE
-  - dataset/benchmark_splitted/NH-HAZE
-  - dataset/custom_dataset_splitted
+data_concat_train_dir: null
 
 test_subset_dir:  # list of folders for testing on multiple datasets and tested with random sampling
   - dataset/benchmark_splitted/Dense_Haze
@@ -36,16 +31,16 @@ phase: easy  # options for Curriculum Learning: 'easy', 'medium', 'hard', 'extre
 patience: 50  # for early stopping
 
 #* test
-test_model: RESULTS/EXP1/synthetic_dataset/ConvIR/OTS/Best.pkl # path to model to be tested
+test_model: ckpt/convIR.onnx # path to model to be tested
 save_image: true  # options: true, false
 number_subsets: 10  # number of subsets for random sampling of the test set
 subset_ratio: 0.6  # ratio of images to sample for each subset
 
 #* logging
-model_save_dir: quantization/ConvIR/OTS/  # directory to save models
-result_dir: quantization/test  # directory to save test results
+model_save_dir: onnx/ConvIR/OTS/  # directory to save models
+result_dir: onnx/test  # directory to save test results
 
 
 
 notes: |
-  Quantization of the chosen model trained on multiple datasets (Dense-Haze, I-HAZE, O-HAZE, NH-HAZE and custom synthetic dataset)
+  Onnx of the chosen model trained on multiple datasets (Dense-Haze, I-HAZE, O-HAZE, NH-HAZE and custom synthetic dataset)
