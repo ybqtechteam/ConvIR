@@ -90,13 +90,14 @@ class dynamic_filter(nn.Module):
 
         # ! self.ap = nn.AdaptiveAvgPool2d((1, 1))
         # ! self.gap = nn.AdaptiveAvgPool2d(1)
+        self.ap = GlobalAvgPool2d((1,1))
+        self.gap = GlobalAvgPool2d(1)
 
         self.inside_all = nn.Parameter(torch.zeros(inchannels,1,1), requires_grad=True)
 
     def forward(self, x):
         identity_input = x
-        # low_filter = self.ap(x)
-        low_filter = F.avg_pool2d(x, kernel_size=tuple(x.shape[2:])) # ! changed
+        low_filter = self.ap(x)
         low_filter = self.conv(low_filter)
         low_filter = self.bn(low_filter)     
 
@@ -110,8 +111,7 @@ class dynamic_filter(nn.Module):
     
         low_part = torch.sum(x * low_filter, dim=3).reshape(n, c, h, w)
 
-        # out_low = low_part * (self.inside_all + 1.) - self.inside_all * self.gap(identity_input)
-        out_low = low_part * (self.inside_all + 1.) - self.inside_all * F.avg_pool2d(identity_input, kernel_size=tuple(identity_input.shape[2:])) # ! changed
+        out_low = low_part * (self.inside_all + 1.) - self.inside_all * self.gap(identity_input)
 
         out_low = out_low * self.lamb_l[None,:,None,None]
 
@@ -148,18 +148,18 @@ class spatial_strip_att(nn.Module):
         self.pad = nn.ReflectionPad2d((pad, pad, 0, 0)) if H else nn.ReflectionPad2d((0, 0, pad, pad))
         self.conv = nn.Conv2d(dim, group*kernel, kernel_size=1, stride=1, bias=False)
         # ! self.ap = nn.AdaptiveAvgPool2d((1, 1))
+        self.ap = GlobalAvgPool2d((1,1))
         self.filter_act = nn.Tanh()
         self.inside_all = nn.Parameter(torch.zeros(dim,1,1), requires_grad=True)
         self.lamb_l = nn.Parameter(torch.zeros(dim), requires_grad=True)
         self.lamb_h = nn.Parameter(torch.zeros(dim), requires_grad=True)
-        # ! gap_kernel = (None,1) if H else (1, None) 
+        gap_kernel = (None,1) if H else (1, None) 
         # ! self.gap = nn.AdaptiveAvgPool2d(gap_kernel)
-        self.H = H # ! added
+        self.gap = GlobalAvgPool2d(gap_kernel)
 
     def forward(self, x):
         identity_input = x.clone()
-        # filter = self.ap(x)
-        filter = F.avg_pool2d(x, kernel_size=tuple(x.shape[2:])) # ! changed
+        filter = self.ap(x)
         filter = self.conv(filter)
         n, c, h, w = x.shape
         x = F.unfold(self.pad(x), kernel_size=self.kernel, dilation=self.dilation).reshape(n, self.group, c//self.group, self.k, h*w)
@@ -168,10 +168,7 @@ class spatial_strip_att(nn.Module):
         filter = self.filter_act(filter)
         out = torch.sum(x * filter, dim=3).reshape(n, c, h, w)
 
-        # out_low = out * (self.inside_all + 1.) - self.inside_all * self.gap(identity_input)
-        h, w = identity_input.shape[2:] # ! added
-        kernel_size = (1, w) if self.H else (h, 1) # ! added
-        out_low = out * (self.inside_all + 1.) - self.inside_all * F.avg_pool2d(identity_input, kernel_size=kernel_size) # ! changed
+        out_low = out * (self.inside_all + 1.) - self.inside_all * self.gap(identity_input)
         out_low = out_low * self.lamb_l[None,:,None,None]
         out_high = identity_input * (self.lamb_h[None,:,None,None]+1.)
 
@@ -193,6 +190,20 @@ class MultiShapeKernel(nn.Module):
         return x1+x2
 
 
+class GlobalAvgPool2d(nn.Module):
+
+    def __init__(self, output_size=(1, 1)):
+        super(GlobalAvgPool2d, self).__init__()
+
+        _func: dict = {
+            (None, 1): lambda x: torch.mean(x, dim=-1, keepdim=True),
+            (1, None): lambda x: torch.mean(x, dim=-2, keepdim=True),
+        }
+
+        self.f = _func.get(output_size, lambda x: torch.mean(x, dim=(-2, -1), keepdim=True))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.f(x)
 
 
 
@@ -229,3 +240,17 @@ if __name__ == "__main__":
     _y4 = _layer4
     print(y4.shape)
     print(_y4.shape)
+
+    print("-----")
+
+    _l = GlobalAvgPool2d(1)
+    y5 = _l(x)
+    print(y5.shape)
+
+    _l2 = GlobalAvgPool2d((None,1))
+    y6 = _l2(x)
+    print(y6.shape)
+
+    _l3 = GlobalAvgPool2d((1,None))
+    y7 = _l3(x)
+    print(y7.shape)
