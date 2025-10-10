@@ -180,3 +180,4 @@ readme.txt
 .IDEA
 *.out
 run.sh
+*.onnx

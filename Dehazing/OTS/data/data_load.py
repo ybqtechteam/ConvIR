@@ -116,6 +116,46 @@ class Dataset(TorchDataset):
 
 
 
+
+
+class CalibrationDataset(TorchDataset):
+    """
+    Dataset per la calibrazione della quantizzazione.
+    Carica solo le immagini di input (senza etichette).
+    """
+    def __init__(self, image_dir, transform=None):
+        # directory contenente le immagini da usare per la calibrazione
+        self.image_dir = image_dir
+        self.image_list = os.listdir(image_dir)
+        self._check_image(self.image_list)
+        self.image_list.sort()
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.image_list)
+
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.image_dir, self.image_list[idx])
+        image = Image.open(img_path).convert('RGB')
+
+        if self.transform:
+            image = self.transform(image)
+        else:
+            image = F.to_tensor(image)
+
+        return image
+
+    @staticmethod
+    def _check_image(lst):
+        valid_ext = {'png', 'jpg', 'jpeg', 'JPG'}
+        for x in lst:
+            ext = x.split('.')[-1]
+            if ext not in valid_ext:
+                raise ValueError(f"Formato file non supportato: {x}")
+
+
+
+
 '''
 -----------------------------------------------------------------------------------------------------------------------
 '''
