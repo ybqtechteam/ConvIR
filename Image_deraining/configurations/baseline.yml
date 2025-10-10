@@ -1,8 +1,8 @@
 #* Directories
-model_name: baseline
+model_name: baseline_LHP
 mode: test     # options: 'train', 'test', 'concat_train', 'subset_test'
 
-data_dir: dataset/SPA
+data_dir: dataset/LHP
 
 data_concat_train_dir: null
 
@@ -29,8 +29,8 @@ number_subsets: 10  # number of subsets for random sampling of the test set
 subset_ratio: 0.6  # ratio of images to sample for each subset
 
 #* Logging
-model_save_dir: baseline/ConvIR/train/
-result_dir: baseline/test 
+model_save_dir: baseline_LHP/ConvIR/train/
+result_dir: baseline_LHP/test 
 
 notes: |
-  testing large model on SPA dataset
+  testing large model on LHP dataset
