@@ -81,24 +81,35 @@
 #--------------------------------------STATICA-----------------------------
 
 
+#--------------------------------------STATICA (MULTI-DIRECTORY)-----------------------------
+
 import os
 import torch
 import torch.nn.functional as nnF
 import numpy as np
 import inspect
-from onnxruntime.quantization import quantize_static, CalibrationDataReader, QuantType
+from onnxruntime.quantization import quantize_static, CalibrationDataReader, QuantType, CalibrationMethod
 import onnx
 from torchvision import transforms
-from data.data_load import CalibrationDataset
+from PIL import Image
+from torch.utils.data import Dataset, DataLoader
 
 
 # === 🔍 Controllo di sicurezza: assicuriamoci che nnF.pad sia quello corretto ===
 print("Pad in uso da:", inspect.getmodule(nnF.pad))
 
 # === 1️⃣ Imposta parametri ===
-image_dir = "dataset/calibration/hazy/"  # directory con immagini di dehazing
+image_dirs = [
+    "/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/Dense_Haze/train/hazy",
+    "/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/Dense_Haze/val/hazy",
+    #"/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/Dense_Haze/test/hazy",
+    #  "/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/NH-HAZE/test/hazy",
+    #  "/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/NH-HAZE/val/hazy",
+    #  "/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/NH-HAZE/train/hazy",
+    #"/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/custom_dataset_splitted/test/hazy"
+]
 onnx_model = "convIR.onnx"
-onnx_model_quantized = "convIR_int8_III.onnx"
+onnx_model_quantized = "convIR_int8_excluded.onnx"
 batch_size = 1
 num_workers = 0
 device = "cpu"  # quantizzazione statica usa solo CPU
@@ -115,8 +126,42 @@ transform = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-dataset = CalibrationDataset(image_dir, transform=transform)
-dataloader = torch.utils.data.DataLoader(
+# === 4️⃣ Dataset personalizzato che supporta più directory ===
+class CalibrationDataset(Dataset):
+    def __init__(self, image_dirs, transform=None):
+        if isinstance(image_dirs, str):
+            image_dirs = [image_dirs]
+        self.image_paths = []
+        for d in image_dirs:
+            if not os.path.exists(d):
+                print(f"[ATTENZIONE] Cartella non trovata: {d}")
+                continue
+            files = [
+                os.path.join(d, f)
+                for f in os.listdir(d)
+                if f.lower().endswith(('.png', '.jpg', '.jpeg'))
+            ]
+            self.image_paths.extend(files)
+
+        if not self.image_paths:
+            raise RuntimeError("❌ Nessuna immagine trovata nelle cartelle di calibrazione!")
+        print(f"[INFO] Trovate {len(self.image_paths)} immagini totali di calibrazione.")
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        img_path = self.image_paths[idx]
+        image = Image.open(img_path).convert("RGB")
+        if self.transform:
+            image = self.transform(image)
+        return image
+
+
+# === 5️⃣ DataLoader ===
+dataset = CalibrationDataset(image_dirs, transform=transform)
+dataloader = DataLoader(
     dataset,
     batch_size=batch_size,
     shuffle=False,
@@ -125,7 +170,7 @@ dataloader = torch.utils.data.DataLoader(
     drop_last=False
 )
 
-# === 4️⃣ Converte batch di immagini PyTorch in NumPy per ONNX ===
+# === 6️⃣ Prepara immagini per ONNX ===
 def prepare_image_tensor(input_img, factor=8):
     """
     Applica padding riflessivo come nel training e converte in NumPy float32
@@ -137,7 +182,7 @@ def prepare_image_tensor(input_img, factor=8):
     input_img = nnF.pad(input_img, (0, padw, 0, padh), mode='reflect')
     return input_img.cpu().numpy().astype(np.float32)
 
-# === 5️⃣ Crea un CalibrationDataReader ===
+# === 7️⃣ DataReader per la calibrazione ===
 class TorchImageDataReader(CalibrationDataReader):
     def __init__(self, dataloader, input_name, factor):
         self.iterator = iter(dataloader)
@@ -146,8 +191,7 @@ class TorchImageDataReader(CalibrationDataReader):
 
     def get_next(self):
         try:
-            # dataset restituisce solo immagini
-            input_img = next(self.iterator)  # non unpacking
+            input_img = next(self.iterator)
             np_input = prepare_image_tensor(input_img, self.factor)
             return {self.input_name: np_input}
         except StopIteration:
@@ -155,13 +199,34 @@ class TorchImageDataReader(CalibrationDataReader):
 
 calibration_data_reader = TorchImageDataReader(dataloader, input_name, factor)
 
-# === 6️⃣ Esegui quantizzazione ===
-print("Inizio quantizzazione statica...")
+
+# === 🔎 Filtra i nodi da escludere in base ai prefissi ===
+exclude_prefixes = ["/Decoder.2/layers/", "/feat_extract.5/", "/Convs.1/"]
+
+all_nodes = [n.name for n in model.graph.node]
+excluded_nodes = [
+    n for n in all_nodes if any(n.startswith(prefix) for prefix in exclude_prefixes)
+]
+
+
+# === 8️⃣ Esegui quantizzazione ===
+print("\n🚀 Inizio quantizzazione statica...")
 quantize_static(
     model_input=onnx_model,
     model_output=onnx_model_quantized,
     calibration_data_reader=calibration_data_reader,
     weight_type=QuantType.QInt8,
-    activation_type=QuantType.QInt8
+    activation_type=QuantType.QInt8,
+    nodes_to_exclude=excluded_nodes,
+    #per_channel=True,
+    reduce_range=True,
+    #extra_options={
+    #      "WeightSymmetric": True,
+    #      "ActivationSymmetric": False,
+    #      "CalibMovingAverage": True,
+    # }
+    #calibrate_method=CalibrationMethod.Distribution, 
+    #p_types_to_exclude=["Gemm"]
 )
 print(f"✅ Modello quantizzato salvato in: {onnx_model_quantized}")
+
