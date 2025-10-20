@@ -1,13 +1,12 @@
 #* Directories
 model_name: small_version_LHP_RR_LW_ON_SPA
-mode: subset_test     # options: 'train', 'test', 'concat_train', 'subset_test'
+mode: test     # options: 'train', 'test', 'concat_train', 'subset_test'
 
-data_dir: null
+data_dir: dataset/SPA
 
 data_concat_train_dir: null
 
-test_subset_dir:
-  - dataset/SPA
+test_subset_dir: null
 
 #* Train
 batch_size: 2
@@ -24,7 +23,7 @@ patience: 50  # Increased patience for early stopping
 num_res: 4  # Number of residual blocks in the model
 
 #* Test
-test_model: small_version_LHP_RR_LW/ConvIR/train/Best.pkl
+test_model: RESULTS/small_version_LHP_RR_LW/ConvIR/train/Best.pkl
 save_image: true
 number_subsets: 10  # number of subsets for random sampling of the test set
 subset_ratio: 0.2  # ratio of images to sample for each subset

@@ -6,6 +6,7 @@ import os
 from skimage.metrics import peak_signal_noise_ratio
 import torch.nn.functional as f
 from data.concat_data_load import _valid_concat_dataloader
+from pytorch_msssim import ssim
 
 
 def _valid(model, args, ep):
@@ -18,6 +19,7 @@ def _valid(model, args, ep):
     
     model.eval()
     psnr_adder = Adder()
+    ssim_adder = Adder()
 
     with torch.no_grad():
         print('Start Evaluation')
@@ -43,8 +45,19 @@ def _valid(model, args, ep):
 
             psnr_adder(psnr)
 
+            label_img = label_img.cuda()
+            down_ratio = max(1, round(min(H, W) / 256))	
+            ssim_val = ssim(f.adaptive_avg_pool2d(pred_clip, (int(H / down_ratio), int(W / down_ratio))), 
+                            f.adaptive_avg_pool2d(label_img, (int(H / down_ratio), int(W / down_ratio))), 
+                            data_range=1, size_average=False)	
+            
+            ssim_adder(ssim_val)
+
     print('\n')
     model.train()
+    
+    #* return average PSNR and SSIM
+    # return psnr_adder.average(), ssim_adder.average()
     return psnr_adder.average()
 
 

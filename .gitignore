@@ -180,3 +180,5 @@ readme.txt
 .IDEA
 *.out
 run.sh
+*.mp4
+tmp*

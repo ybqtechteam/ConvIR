@@ -9,8 +9,9 @@ import torch.nn as nn
 from colorama import Fore
 from data.concat_data_load import _train_concat_dataloader
 from warmup_scheduler import GradualWarmupScheduler
-from early import EarlyStopping
+from early import EarlyStoppingSingleMetric, EarlyStoppingDoubleMetric
 from clearml import Task
+from models.perceptual import VGGLoss
 
 
 def _train(model, args):
@@ -45,9 +46,17 @@ def _train(model, args):
     epoch_total_loss_adder = Adder()
     epoch_timer = Timer('m')
     iter_timer = Timer('m')
+    
     best_psnr=-1
+    early_stopping = EarlyStoppingSingleMetric(patience=args.patience)
 
-    early_stopping = EarlyStopping(patience=args.patience)
+    #* early stopping with two metrics: PSNR and SSIM
+    # best_psnr=-1
+    # best_ssim=-1
+    # early_stopping = EarlyStoppingDoubleMetric(patience=args.patience, min_delta=0.05)
+
+    #* Perceptual Loss
+    # vgg = VGGLoss(device=device)
 
     for epoch_idx in range(epoch, args.num_epoch + 1):
 
@@ -91,6 +100,10 @@ def _train(model, args):
             f3 = criterion(pred_fft3, label_fft3)
             loss_fft = f1+f2+f3
 
+            #* Perceptual Loss
+            # perceptual_loss = vgg(pred_img[2], label_img)
+            # loss = loss_content + 0.1 * loss_fft + 0.1 * perceptual_loss
+
             loss = loss_content + 0.1 * loss_fft
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 0.01)
@@ -124,6 +137,36 @@ def _train(model, args):
         epoch_pixel_adder.reset()
         epoch_total_loss_adder.reset()
         scheduler.step()
+
+        # * uncomment for two-metric early stopping
+        # if epoch_idx % args.valid_freq == 0:
+        #     psnr, ssim = _valid(model, args, epoch_idx)
+            
+        #     task.get_logger().report_scalar("VALIDATION", "PSNR", iteration=epoch_idx, value=psnr)
+        #     print('%03d epoch \n CURRENT Average PSNR %.2f dB' % (epoch_idx, psnr))
+
+        #     task.get_logger().report_scalar("VALIDATION", "SSIM", iteration=epoch_idx, value=ssim)
+        #     print('%03d epoch \n CURRENT Average SSIM %.4f' % (epoch_idx, ssim))
+
+        #     # writer.add_scalar('PSNR', val, epoch_idx)
+        #     if psnr >= best_psnr and not(early_stopping.psnr_early_stop):
+        #         print(Fore.GREEN + 'Saving best model at epoch %d with PSNR %.2f' % (epoch_idx, psnr) + Fore.RESET)
+        #         torch.save({'model': model.state_dict()}, os.path.join(args.model_save_dir, 'Best.pkl'))
+        #         best_psnr = psnr
+            
+        #     if ssim >= best_ssim and not(early_stopping.ssim_early_stop):
+        #         print(Fore.GREEN + 'Saving best model at epoch %d with SSIM %.4f' % (epoch_idx, ssim) + Fore.RESET)
+        #         torch.save({'model': model.state_dict()}, os.path.join(args.model_save_dir, 'Best_SSIM.pkl'))
+        #         best_ssim = ssim
+
+        # early_stopping.forward_psnr(psnr)
+        # early_stopping.forward_ssim(ssim) 
+
+        # if early_stopping.is_stopped():
+        #     print(Fore.RED + "Early stopping triggered" + Fore.RESET)
+        #     break
+
+        
 
         if epoch_idx % args.valid_freq == 0:
             val = _valid(model, args, epoch_idx)
@@ -181,7 +224,7 @@ def _train(model, args):
 
 
 
-def _train_CL(model, args, task):
+def _train_CL(model, args):
     task = Task.current_task()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     criterion = torch.nn.L1Loss()
@@ -211,7 +254,7 @@ def _train_CL(model, args, task):
     iter_timer = Timer('m')
     best_psnr=-1
 
-    early_stopping = EarlyStopping(patience=args.patience)
+    early_stopping = EarlyStoppingSingleMetric(patience=args.patience)
 
     for epoch_idx in range(epoch, args.num_epoch + 1):
 

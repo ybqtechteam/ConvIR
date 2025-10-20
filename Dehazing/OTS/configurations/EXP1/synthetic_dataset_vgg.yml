@@ -1,0 +1,52 @@
+#* Directories
+model_name: synthetic_dataset_vgg_SSIM # experiment name
+mode: subset_test     # options: 'train', 'test', 'subset_test', 'concat_train'
+type: small       # options: 'small', 'base', 'large'
+
+data_dir: null  # folder for normal train, val and test 
+
+data_curriculum_learning_dir: null # list of folders for Curriculum Learning
+
+data_concat_train_dir: # list of folders for training on multiple datasets
+  - dataset/benchmark_splitted/Dense_Haze
+  - dataset/benchmark_splitted/I-HAZE
+  - dataset/benchmark_splitted/O-HAZE
+  - dataset/benchmark_splitted/NH-HAZE
+  - dataset/custom_dataset_splitted
+
+test_subset_dir:  # list of folders for testing on multiple datasets and tested with random sampling
+  - dataset/benchmark_splitted/Dense_Haze
+  - dataset/benchmark_splitted/I-HAZE
+  - dataset/benchmark_splitted/O-HAZE
+  - dataset/benchmark_splitted/NH-HAZE
+  - dataset/custom_dataset_splitted
+
+
+#* train
+batch_size: 2
+learning_rate: 0.00002
+weight_decay: 0
+num_epoch: 400
+print_freq: 100
+num_worker: 4
+save_freq: 1
+valid_freq: 1
+resume: null  # path to model to resume training
+phase: easy  # options for Curriculum Learning: 'easy', 'medium', 'hard', 'extreme'. Use easy for normal training without Curriculum Learning
+patience: 60  # for early stopping
+
+#* test
+test_model: synthetic_dataset_vgg/ConvIR/OTS/Best_SSIM.pkl # path to model to be tested
+save_image: true  # options: true, false
+number_subsets: 10  # number of subsets for random sampling of the test set
+subset_ratio: 0.6  # ratio of images to sample for each subset
+
+#* logging
+model_save_dir: synthetic_dataset_vgg_SSIM/ConvIR/OTS/  # directory to save models
+result_dir: synthetic_dataset_vgg_SSIM/test  # directory to save test results
+
+
+
+notes: |
+  Training on multiple datasets (Dense-Haze, I-HAZE, O-HAZE, NH-HAZE and custom synthetic dataset) 
+  using mode "concat_train" and testing with random sampling on the same datasets using mode "subset_test". Vgg version, best SSIM
