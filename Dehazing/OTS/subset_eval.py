@@ -11,11 +11,11 @@ from clearml import Task
 
 def _subset_eval(model, args):
     task = Task.current_task()
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = args.device
     state_dict = torch.load(args.test_model, weights_only=True, map_location=device)
     model.load_state_dict(state_dict['model'])
     dataloader = test_subset_dataloader(args.test_subset_dir, args.subset_ratio, batch_size=1, num_workers=0)
-    torch.cuda.empty_cache()
+
     analyzer = SubsetAnalyzer(["psnr", "ssim", 'time'], folder_path=args.result_dir)
 
     model.eval()
@@ -39,12 +39,10 @@ def _subset_eval(model, args):
                 padw = W-w if w%factor!=0 else 0
                 input_img = f.pad(input_img, (0, padw, 0, padh), 'reflect')
 
-                torch.cuda.synchronize()
                 tm = time.time()
 
                 pred = model(input_img)[2]
                 pred = pred[:,:,:h,:w]
-                torch.cuda.synchronize()
 
                 elapsed = time.time() - tm
                 time_adder(elapsed)
@@ -54,7 +52,7 @@ def _subset_eval(model, args):
                 pred_numpy = pred_clip.squeeze(0).cpu().numpy()
                 label_numpy = label_img.squeeze(0).cpu().numpy()
 
-                label_img = (label_img).cuda()
+                label_img = (label_img).to(device)
                 psnr_val = 10 * torch.log10(1 / f.mse_loss(pred_clip, label_img))
                 down_ratio = max(1, round(min(H, W) / 256))	
                 ssim_val = ssim(f.adaptive_avg_pool2d(pred_clip, (int(H / down_ratio), int(W / down_ratio))), 

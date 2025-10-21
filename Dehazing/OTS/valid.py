@@ -10,7 +10,7 @@ from pytorch_msssim import ssim
 
 
 def _valid(model, args, ep):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = args.device
 
     if args.mode == 'train':
         dataloader = valid_dataloader(args.data_dir, batch_size=1, num_workers=0)
@@ -45,7 +45,7 @@ def _valid(model, args, ep):
 
             psnr_adder(psnr)
 
-            label_img = label_img.cuda()
+            label_img = label_img.to(device)
             down_ratio = max(1, round(min(H, W) / 256))	
             ssim_val = ssim(f.adaptive_avg_pool2d(pred_clip, (int(H / down_ratio), int(W / down_ratio))), 
                             f.adaptive_avg_pool2d(label_img, (int(H / down_ratio), int(W / down_ratio))), 

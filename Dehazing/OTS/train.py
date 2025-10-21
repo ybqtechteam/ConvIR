@@ -16,7 +16,7 @@ from models.perceptual import VGGLoss
 
 def _train(model, args):
     task = Task.current_task()
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = args.device
     criterion = torch.nn.L1Loss()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.9, 0.999), eps=1e-8)
