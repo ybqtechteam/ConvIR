@@ -34,7 +34,7 @@ valid_freq: 1
 resume: null  # path to model to resume training
 phase: easy  # options for Curriculum Learning: 'easy', 'medium', 'hard', 'extreme'. Use easy for normal training without Curriculum Learning
 patience: 50  # for early stopping
-device: cpu
+device: cuda
 
 #* test
 test_model: results/ConvIR/OTS/Best.pkl  # path to model to be tested

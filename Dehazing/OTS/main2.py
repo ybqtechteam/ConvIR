@@ -17,6 +17,11 @@ class Device(Enum):
 
     @staticmethod
     def from_args(arg):
+        if not hasattr(arg, 'device'):
+            return Device.AUTO.value
+        
+        arg = arg.device.lower()
+        
         if arg == 'cpu':
             return Device.CPU.value
         elif arg == 'cuda':
@@ -71,7 +76,7 @@ if __name__ == '__main__':
     PROJECT_NAME = "VISTA/ConvIR/Dehazing" if not args.debug else "debug"
 
     args = YAMLLoader(config_path=args.config)
-    args.device = Device.from_args(args.device)
+    args.device = Device.from_args(args)
 
     if not os.path.exists(args.model_save_dir):
         os.makedirs(args.model_save_dir)
