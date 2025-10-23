@@ -1,0 +1,36 @@
+#* Directories
+model_name: onnx_quantized
+mode: subset_test_onnx        # options: 'train', 'test', 'concat_train', 'subset_test'
+
+data_dir: null
+
+data_concat_train_dir: null
+
+test_subset_dir: null
+
+#* Train
+batch_size: 2
+learning_rate: 0.0001
+weight_decay: 0
+num_epoch: 300
+print_freq: 100
+num_worker: 1
+save_freq: 1
+valid_freq: 1
+resume: null
+gamma: 0.5
+patience: 50  # Increased patience for early stopping
+num_res: 4  # Number of residual blocks in the model
+
+#* Test
+test_model: null
+save_image: true
+number_subsets: 10  # number of subsets for random sampling of the test set
+subset_ratio: 0.2  # ratio of images to sample for each subset
+
+#* Logging
+model_save_dir: onnx_quantized/ConvIR/train/
+result_dir: onnx_quantized/test 
+
+notes: |
+  # onnx of the chosen model

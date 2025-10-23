@@ -31,7 +31,7 @@ phase: easy  # options for Curriculum Learning: 'easy', 'medium', 'hard', 'extre
 patience: 50  # for early stopping
 
 #* test
-test_model: ckpt/convIR_int8.onnx # path to model to be tested
+test_model: convIR_int8_excluded_haze.onnx # path to model to be tested
 save_image: true  # options: true, false
 number_subsets: 10  # number of subsets for random sampling of the test set
 subset_ratio: 0.6  # ratio of images to sample for each subset

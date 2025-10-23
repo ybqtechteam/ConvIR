@@ -86,8 +86,10 @@ class dynamic_filter(nn.Module):
         self.lamb_h = nn.Parameter(torch.zeros(inchannels), requires_grad=True)
         self.pad = nn.ReflectionPad2d(self.dilation*(kernel_size-1)//2)
 
-        self.ap = nn.AdaptiveAvgPool2d((1, 1))
-        self.gap = nn.AdaptiveAvgPool2d(1)
+        # ! self.ap = nn.AdaptiveAvgPool2d((1, 1))
+        # ! self.gap = nn.AdaptiveAvgPool2d(1)
+        self.ap = GlobalAvgPool2d((1,1))
+        self.gap = GlobalAvgPool2d(1)
 
         self.inside_all = nn.Parameter(torch.zeros(inchannels,1,1), requires_grad=True)
 
@@ -143,13 +145,15 @@ class spatial_strip_att(nn.Module):
         self.group = group
         self.pad = nn.ReflectionPad2d((pad, pad, 0, 0)) if H else nn.ReflectionPad2d((0, 0, pad, pad))
         self.conv = nn.Conv2d(dim, group*kernel, kernel_size=1, stride=1, bias=False)
-        self.ap = nn.AdaptiveAvgPool2d((1, 1))
+        # ! self.ap = nn.AdaptiveAvgPool2d((1, 1))
+        self.ap = GlobalAvgPool2d((1,1))
         self.filter_act = nn.Tanh()
         self.inside_all = nn.Parameter(torch.zeros(dim,1,1), requires_grad=True)
         self.lamb_l = nn.Parameter(torch.zeros(dim), requires_grad=True)
         self.lamb_h = nn.Parameter(torch.zeros(dim), requires_grad=True)
         gap_kernel = (None,1) if H else (1, None) 
-        self.gap = nn.AdaptiveAvgPool2d(gap_kernel)
+        # ! self.gap = nn.AdaptiveAvgPool2d(gap_kernel)
+        self.gap = GlobalAvgPool2d(gap_kernel)
 
     def forward(self, x):
         identity_input = x.clone()
@@ -182,5 +186,21 @@ class MultiShapeKernel(nn.Module):
         x2 = self.square_att(x)
 
         return x1+x2
+
+
+class GlobalAvgPool2d(nn.Module):
+
+    def __init__(self, output_size=(1, 1)):
+        super(GlobalAvgPool2d, self).__init__()
+
+        _func: dict = {
+            (None, 1): lambda x: torch.mean(x, dim=-1, keepdim=True),
+            (1, None): lambda x: torch.mean(x, dim=-2, keepdim=True),
+        }
+
+        self.f = _func.get(output_size, lambda x: torch.mean(x, dim=(-2, -1), keepdim=True))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.f(x)
 
 

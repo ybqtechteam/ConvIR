@@ -4,16 +4,31 @@ import argparse
 from torch.backends import cudnn
 from models.ConvIR import build_net
 from train import _train
-from eval import _eval
-from subset_eval import _subset_eval
+from eval import _eval, _eval_onnx
+from subset_eval import _subset_eval, _subset_eval_onnx
 from configurations.loader import YAMLLoader
 from clearml import Task, TaskTypes
+from models.quantization import ONNXModel
 
 def main(args):
     cudnn.benchmark = True
 
     if not os.path.exists(args.result_dir):
         os.makedirs(args.result_dir)
+    
+    if args.mode == 'subset_test_onnx':
+        task = Task.init(project_name=f"{PROJECT_NAME}/Onnx", task_name=args.model_name, task_type=TaskTypes.testing)
+        task.connect(args)
+        model = ONNXModel(args.test_model)
+        _subset_eval_onnx(model, args)
+        return
+    
+    if args.mode == 'test_onnx':
+        task = Task.init(project_name=f"{PROJECT_NAME}/Onnx", task_name=args.model_name, task_type=TaskTypes.testing)
+        task.connect(args)
+        model = ONNXModel(args.test_model)
+        _eval_onnx(model, args)
+        return
 
     model = build_net(num_res=args.num_res)  # Adjust num_res as needed
     

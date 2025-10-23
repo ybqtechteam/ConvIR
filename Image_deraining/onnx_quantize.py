@@ -88,11 +88,12 @@ import torch
 import torch.nn.functional as nnF
 import numpy as np
 import inspect
-from onnxruntime.quantization import quantize_static, CalibrationDataReader, QuantType, CalibrationMethod
+from onnxruntime.quantization import quantize_static, CalibrationDataReader, QuantType
 import onnx
 from torchvision import transforms
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
+import random
 
 
 # === 🔍 Controllo di sicurezza: assicuriamoci che nnF.pad sia quello corretto ===
@@ -100,20 +101,25 @@ print("Pad in uso da:", inspect.getmodule(nnF.pad))
 
 # === 1️⃣ Imposta parametri ===
 image_dirs = [
-    "/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/Dense_Haze/train/hazy",
-    "/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/Dense_Haze/val/hazy",
-    #"/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/Dense_Haze/test/hazy",
-    #  "/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/NH-HAZE/test/hazy",
-    #  "/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/NH-HAZE/val/hazy",
-    #  "/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/benchmark_splitted/NH-HAZE/train/hazy",
-    #"/home/giovannidistasio/vista/models/ConvIR/Dehazing/OTS/dataset/custom_dataset_splitted/test/hazy"
+    ##"/home/giovannidistasio/vista/models/ConvIR/Image_deraining/dataset/LHP/test/input",
+    ##"/home/giovannidistasio/vista/models/ConvIR/Image_deraining/dataset/LHP/train/input",
+    ##"/home/giovannidistasio/vista/models/ConvIR/Image_deraining/dataset/LHP/val/input", 
+    ##"/home/giovannidistasio/vista/models/ConvIR/Image_deraining/dataset/RealRain-1k/RealRain-1k-H/test/input",
+    ##"/home/giovannidistasio/vista/models/ConvIR/Image_deraining/dataset/RealRain-1k/RealRain-1k-H/train/input",
+    ## "/home/giovannidistasio/vista/models/ConvIR/Image_deraining/dataset/RealRain-1k/RealRain-1k-H/val/input",
+    ##"/home/giovannidistasio/vista/models/ConvIR/Image_deraining/dataset/RealRain-1k/RealRain-1k-L/test/input",
+    ##"/home/giovannidistasio/vista/models/ConvIR/Image_deraining/dataset/RealRain-1k/RealRain-1k-L/train/input",
+    "/home/giovannidistasio/vista/models/ConvIR/Image_deraining/dataset/RealRain-1k/RealRain-1k-L/val/input",#*************#
+    ##"/home/giovannidistasio/vista/models/ConvIR/Image_deraining/dataset/SPA/test/input"
 ]
-onnx_model = "convIR.onnx"
-onnx_model_quantized = "convIR_int8_excluded.onnx"
+onnx_model = "convIR_rain.onnx"
+onnx_model_quantized = "convIR_int8_excluded_rain.onnx"
 batch_size = 1
 num_workers = 0
 device = "cpu"  # quantizzazione statica usa solo CPU
-factor = 8  # come nel tuo codice
+factor = 8
+num_images_per_dir = 25  # numero di immagini casuali da ogni directory
+
 
 # === 2️⃣ Carica nome input modello ===
 model = onnx.load(onnx_model)
@@ -126,26 +132,50 @@ transform = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-# === 4️⃣ Dataset personalizzato che supporta più directory ===
+
+# === 4️⃣ Dataset personalizzato che supporta più directory e selezione casuale bilanciata ===
 class CalibrationDataset(Dataset):
-    def __init__(self, image_dirs, transform=None):
+    def __init__(self, image_dirs, transform=None, num_images_per_dir=None, seed=42):
+        """
+        image_dirs: lista di cartelle da cui prendere le immagini
+        transform: trasformazioni torchvision
+        num_images_per_dir: numero di immagini casuali da prendere per ciascuna directory
+        seed: random seed per riproducibilità
+        """
         if isinstance(image_dirs, str):
             image_dirs = [image_dirs]
+
+        random.seed(seed)
         self.image_paths = []
+
         for d in image_dirs:
             if not os.path.exists(d):
                 print(f"[ATTENZIONE] Cartella non trovata: {d}")
                 continue
+
             files = [
                 os.path.join(d, f)
                 for f in os.listdir(d)
                 if f.lower().endswith(('.png', '.jpg', '.jpeg'))
             ]
-            self.image_paths.extend(files)
+
+            if not files:
+                print(f"[ATTENZIONE] Nessuna immagine trovata in {d}")
+                continue
+
+            # 🔹 Se richiesto, scegli num_images_per_dir immagini casuali da questa directory
+            if num_images_per_dir is not None and num_images_per_dir < len(files):
+                selected = random.sample(files, num_images_per_dir)
+            else:
+                selected = files
+
+            self.image_paths.extend(selected)
+            print(f"[INFO] Selezionate {len(selected)} immagini da: {d}")
 
         if not self.image_paths:
             raise RuntimeError("❌ Nessuna immagine trovata nelle cartelle di calibrazione!")
-        print(f"[INFO] Trovate {len(self.image_paths)} immagini totali di calibrazione.")
+
+        print(f"[INFO] Totale immagini usate per calibrazione: {len(self.image_paths)}")
         self.transform = transform
 
     def __len__(self):
@@ -160,7 +190,12 @@ class CalibrationDataset(Dataset):
 
 
 # === 5️⃣ DataLoader ===
-dataset = CalibrationDataset(image_dirs, transform=transform)
+dataset = CalibrationDataset(
+    image_dirs=image_dirs,
+    transform=transform,
+    num_images_per_dir=num_images_per_dir
+)
+
 dataloader = DataLoader(
     dataset,
     batch_size=batch_size,
@@ -169,6 +204,7 @@ dataloader = DataLoader(
     pin_memory=True,
     drop_last=False
 )
+
 
 # === 6️⃣ Prepara immagini per ONNX ===
 def prepare_image_tensor(input_img, factor=8):
@@ -181,6 +217,7 @@ def prepare_image_tensor(input_img, factor=8):
     padw = W - w if w % factor != 0 else 0
     input_img = nnF.pad(input_img, (0, padw, 0, padh), mode='reflect')
     return input_img.cpu().numpy().astype(np.float32)
+
 
 # === 7️⃣ DataReader per la calibrazione ===
 class TorchImageDataReader(CalibrationDataReader):
@@ -196,6 +233,7 @@ class TorchImageDataReader(CalibrationDataReader):
             return {self.input_name: np_input}
         except StopIteration:
             return None
+
 
 calibration_data_reader = TorchImageDataReader(dataloader, input_name, factor)
 
@@ -220,19 +258,9 @@ quantize_static(
     nodes_to_exclude=excluded_nodes,
     reduce_range=True,
     extra_options={
-    #        "WeightSymmetric": False,
-    #        "ActivationSymmetric": True,
-    #        "MatMulConstBOnly" : True,
-    #        "CalibMovingAverage": True,
-    #        "AddQDQPairToWeight" : True,
-    #        "DedicatedQDQPairs": True,
-    #        "CalibMovingAverage": True,
-    #       "QDQKeepRemovableActivations": True  
-            "QuantizeBias": False,
-            
-     }
-    #calibrate_method=CalibrationMethod.Distribution, 
-    #p_types_to_exclude=["Gemm"]
+        "QuantizeBias": False,
+    }
 )
 print(f"✅ Modello quantizzato salvato in: {onnx_model_quantized}")
+
 
