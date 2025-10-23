@@ -8,6 +8,28 @@ from eval import _eval
 from subset_eval import _subset_eval
 from configurations.loader import YAMLLoader
 from clearml import Task, TaskTypes
+from enum import Enum
+
+class Device(Enum):
+    CPU = torch.device('cpu')
+    CUDA = torch.device('cuda')
+    AUTO = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    @staticmethod
+    def from_args(arg):
+        if not hasattr(arg, 'device'):
+            return Device.AUTO.value
+
+        arg = arg.device.lower()
+        
+        if arg == 'cpu':
+            return Device.CPU.value
+        elif arg == 'cuda':
+            return Device.CUDA.value
+        elif arg == 'auto':
+            return Device.AUTO.value
+        else:
+            raise ValueError("Invalid device argument. Choose from 'cpu', 'cuda', or 'auto'.")
 
 def main(args):
     cudnn.benchmark = True
@@ -16,9 +38,7 @@ def main(args):
         os.makedirs(args.result_dir)
 
     model = build_net(num_res=args.num_res)  # Adjust num_res as needed
-    
-    if torch.cuda.is_available():
-        model.cuda()
+    model.to(args.device)
     
     if args.mode == 'train' or args.mode == 'concat_train':
         print('Training')
@@ -48,6 +68,7 @@ if __name__ == '__main__':
     PROJECT_NAME = "VISTA/ConvIR/Deraining" if not args.debug else "debug"
 
     args = YAMLLoader(config_path=args.config)
+    args.device = Device.from_args(args)
 
     if not os.path.exists(args.model_save_dir):
         os.makedirs(args.model_save_dir)

@@ -9,7 +9,7 @@ from data.concat_data_load import _valid_concat_dataloader
 
 
 def _valid(model, args, ep):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = args.device
     
     if args.mode == 'train':
         dataloader = valid_dataloader(args.data_dir, batch_size=1, num_workers=0)
